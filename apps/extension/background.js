@@ -76,21 +76,26 @@ async function cancel(id) {
 async function ring(alarm) {
     const { alarms } = await getState()
 
+    // Written before anything else: the offscreen document reads this on load
+    // to decide whether to start playing, and the popup renders from it.
     await setState({
         alarms: removeAlarm(alarms, alarm.id),
         ringing: alarm
     })
 
-    await playAlarm()
-    await notify(alarm)
-    await updateBadge()
+    // Independent channels. A failure in one must not silence the others —
+    // losing audio should never also cost you the notification.
+    await Promise.allSettled([playAlarm(), notify(alarm), updateBadge()])
 }
 
 async function stopRinging() {
-    await stopAlarm()
-    await browser.notifications.clear('ringing').catch(() => {})
+    // Clear state first; the offscreen document stops as soon as it sees this.
     await setState({ ringing: null })
-    await updateBadge()
+    await Promise.allSettled([
+        stopAlarm(),
+        browser.notifications.clear('ringing'),
+        updateBadge()
+    ])
 }
 
 async function snoozeRinging(minutes = DEFAULT_SNOOZE_MINUTES) {
@@ -101,21 +106,29 @@ async function snoozeRinging(minutes = DEFAULT_SNOOZE_MINUTES) {
 // --------------------------------------------------------------------- audio
 
 async function ensureOffscreen() {
-    if (await chrome.offscreen.hasDocument()) return
+    try {
+        // hasDocument() only exists from Chrome 116; the catch below covers
+        // older versions, where creating a second document is what tells us
+        // one already exists.
+        if (await chrome.offscreen.hasDocument?.()) return
 
-    await chrome.offscreen.createDocument({
-        url: 'offscreen.html',
-        reasons: ['AUDIO_PLAYBACK'],
-        justification: 'Play the alarm sound when an alarm fires.'
-    })
+        await chrome.offscreen.createDocument({
+            url: 'offscreen.html',
+            reasons: ['AUDIO_PLAYBACK'],
+            justification: 'Play the alarm sound when an alarm fires.'
+        })
+    } catch (error) {
+        if (!String(error).includes('single offscreen document')) throw error
+    }
 }
 
 let firefoxAudio = null
 
 async function playAlarm() {
     if (isChrome) {
+        // Creating the document is the whole trigger — it reads `ringing` from
+        // storage on load and starts itself. No message, so nothing to race.
         await ensureOffscreen()
-        await chrome.runtime.sendMessage({ target: 'offscreen', type: 'PLAY' })
         return
     }
 
@@ -128,10 +141,8 @@ async function playAlarm() {
 
 async function stopAlarm() {
     if (isChrome) {
-        if (await chrome.offscreen.hasDocument()) {
-            await chrome.runtime.sendMessage({ target: 'offscreen', type: 'STOP' })
-            await chrome.offscreen.closeDocument()
-        }
+        // Closing the document tears the <audio> element down with it.
+        await chrome.offscreen.closeDocument().catch(() => {})
         return
     }
 
@@ -214,9 +225,6 @@ browser.notifications.onClicked.addListener(async (id) => {
 })
 
 browser.runtime.onMessage.addListener((message) => {
-    // Messages addressed to the offscreen document pass through here too.
-    if (message?.target === 'offscreen') return
-
     switch (message?.type) {
         case 'ADD_ALARM':
             return addAndSchedule(message.at)
