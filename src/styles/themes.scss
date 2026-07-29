@@ -1,0 +1,99 @@
+/**
+ * Five themes, one contract. Every component styles itself purely from these
+ * custom properties — no component may hard-code a colour, or adding a sixth
+ * theme would mean touching every file.
+ *
+ * --digit-ghost is the dim "8" rendered behind each digit to hold its width so
+ * the proportional LCD face doesn't jitter as the numbers change.
+ */
+
+:root,
+:root[data-theme='lcd'] {
+    --bg: #0b0f0c;
+    --surface: #131a15;
+    --border: #1f2f24;
+    --text: #b8ffd0;
+    --muted: #5d7d6a;
+    --digit: #4dff9b;
+    --digit-ghost: #1632222e;
+    --accent: #22c55e;
+    --accent-contrast: #04150a;
+    --danger: #ef4444;
+    --danger-contrast: #1a0505;
+    --glow: 0 0 18px rgb(77 255 155 / 35%);
+}
+
+:root[data-theme='amber'] {
+    --bg: #14100a;
+    --surface: #1e1710;
+    --border: #3a2c1a;
+    --text: #ffe2b0;
+    --muted: #9a7f56;
+    --digit: #ffb038;
+    --digit-ghost: #3a25092e;
+    --accent: #f59e0b;
+    --accent-contrast: #1a1004;
+    --danger: #ef4444;
+    --danger-contrast: #1a0505;
+    --glow: 0 0 18px rgb(255 176 56 / 35%);
+}
+
+:root[data-theme='midnight'] {
+    --bg: #0d1220;
+    --surface: #151d31;
+    --border: #24304a;
+    --text: #c3d4f0;
+    --muted: #6d7f9e;
+    --digit: #7dd3fc;
+    --digit-ghost: #1a2a442e;
+    --accent: #38bdf8;
+    --accent-contrast: #05121c;
+    --danger: #f87171;
+    --danger-contrast: #1a0808;
+    --glow: 0 0 14px rgb(125 211 252 / 22%);
+}
+
+:root[data-theme='paper'] {
+    --bg: #f6f5f1;
+    --surface: #ffffff;
+    --border: #d9d6cd;
+    --text: #23211c;
+    --muted: #77736a;
+    --digit: #23211c;
+    --digit-ghost: #23211c14;
+    --accent: #2563eb;
+    --accent-contrast: #ffffff;
+    --danger: #dc2626;
+    --danger-contrast: #ffffff;
+    --glow: none;
+}
+
+:root[data-theme='synthwave'] {
+    --bg: #1a0b2e;
+    --surface: #241141;
+    --border: #3d1f66;
+    --text: #f0d9ff;
+    --muted: #9a76c4;
+    --digit: #ff5ed2;
+    --digit-ghost: #3a1a5c3d;
+    --accent: #22d3ee;
+    --accent-contrast: #0a1a1f;
+    --danger: #fb7185;
+    --danger-contrast: #1f0710;
+    --glow: 0 0 22px rgb(255 94 210 / 45%);
+}
+
+// Glow is decorative; honour a stated preference for less motion and contrast.
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --glow: none;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
