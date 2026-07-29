@@ -2,6 +2,12 @@
   command = "npm run build"
   publish = "dist"
 
+[build.environment]
+  # Vite 8 requires ^20.19.0 || >=22.12.0, so the old Node 16 build image
+  # cannot install, let alone build, this project. Pinned here rather than in
+  # the Netlify UI so the requirement travels with the repo.
+  NODE_VERSION = "22"
+
 # The app is a single page now, so the /clock 404 you used to hit can't recur.
 # This fallback is belt-and-braces: any path still resolves to the app rather
 # than to Netlify's 404.
