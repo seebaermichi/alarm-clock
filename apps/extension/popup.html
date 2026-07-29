@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Alarm Clock</title>
+        <style>
+            /* A popup has no viewport of its own — without an explicit size it
+               collapses to its content and jumps around as alarms come and go. */
+            html,
+            body {
+                height: 460px;
+                margin: 0;
+                width: 380px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app"></div>
+        <script type="module" src="./popup.js"></script>
+    </body>
+</html>

@@ -17,12 +17,31 @@
  */
 
 import { isValidTheme, defaultTheme } from '@/core/themes.js'
+import { useAlarms } from '@/composables/useAlarms.js'
 
 const STORAGE_KEY = 'alarm-clock:state'
 const ALARM_SOUND = '/sounds/alarm-clock.mp3'
 
 export function createWebPlatform() {
     let audio = null
+    const platform = {}
+
+    function read() {
+        try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null') ?? {}
+        } catch {
+            return {}
+        }
+    }
+
+    /** Merge-write, so saving alarms cannot clobber the theme and vice versa. */
+    function write(patch) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...read(), ...patch }))
+        } catch {
+            // Private mode / quota. The clock still works for this session.
+        }
+    }
 
     function element() {
         if (!audio) {
@@ -34,16 +53,17 @@ export function createWebPlatform() {
         return audio
     }
 
-    return {
+    return Object.assign(platform, {
+        // The web app fires its own alarms in the page. The extension does not
+        // — its background worker owns scheduling — so this factory is part of
+        // the platform interface rather than something App.vue decides.
+        createAlarms(now) {
+            return useAlarms(platform, now)
+        },
+
         async loadState() {
             const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true
-
-            let stored = null
-            try {
-                stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
-            } catch {
-                // Corrupt or unavailable storage is not worth failing over.
-            }
+            const stored = read()
 
             return {
                 alarms: Array.isArray(stored?.alarms) ? stored.alarms : [],
@@ -51,12 +71,16 @@ export function createWebPlatform() {
             }
         },
 
-        async saveState(state) {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-            } catch {
-                // Private mode / quota. The clock still works for this session.
-            }
+        hydrateAlarms(alarmsRef, stored) {
+            alarmsRef.value = stored
+        },
+
+        saveAlarms(alarms) {
+            write({ alarms })
+        },
+
+        saveTheme(theme) {
+            write({ theme })
         },
 
         async requestPermission() {
@@ -135,5 +159,5 @@ export function createWebPlatform() {
                 }
             }
         }
-    }
+    })
 }

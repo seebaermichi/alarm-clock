@@ -94,16 +94,16 @@ apps/
 
 ## Phase 4 — Extension
 
-- [ ] **24.** Build the `platform/` adapter seam; refactor UI to depend only on it.
-- [ ] **25.** Add `vite-plugin-web-extension` + a second build config. *(Chosen over CRXJS for its `browser` option — needed for the Firefox variant.)*
-- [ ] **26.** MV3 `manifest.json` + background service worker on **`chrome.alarms`** — fires with the popup closed and the browser idle. Note Chrome clamps to a ~30s minimum; sub-minute countdowns fall back to `setTimeout`.
-- [ ] **27.** Audio: MV3 service workers **cannot play sound**. Chrome needs an offscreen document (`chrome.offscreen`, reason `AUDIO_PLAYBACK`); Firefox has no such API and plays from its background page — two adapter impls behind one `playAlarm()`.
-- [ ] **28.** `chrome.notifications` with **Snooze / Stop** action buttons, so it's actionable without opening the popup.
-- [ ] **29.** Persist alarms + theme in `chrome.storage`.
-- [ ] **30.** Toolbar badge counting down to the next alarm.
-- [ ] **31.** Firefox variant: `browser_specific_settings.gecko.id`, `webextension-polyfill`, separate build target.
-- [ ] **32.** Self-host or drop the Google-hosted `Bitter` webfont — MV3's default CSP blocks remote fonts. (`digital-7` is already local.)
-- [ ] **33.** Test load-unpacked in Chrome and via `about:debugging` in Firefox.
+- [x] **24.** Build the `platform/` adapter seam; refactor UI to depend only on it.
+- [x] **25.** Add `vite-plugin-web-extension` + a second build config. *(Chosen over CRXJS for its `browser` option — needed for the Firefox variant.)*
+- [x] **26.** MV3 `manifest.json` + background service worker on **`chrome.alarms`** — fires with the popup closed and the browser idle. Note Chrome clamps to a ~30s minimum; sub-minute countdowns fall back to `setTimeout`.
+- [x] **27.** Audio: MV3 service workers **cannot play sound**. Chrome needs an offscreen document (`chrome.offscreen`, reason `AUDIO_PLAYBACK`); Firefox has no such API and plays from its background page — two adapter impls behind one `playAlarm()`.
+- [x] **28.** `chrome.notifications` with **Snooze / Stop** action buttons, so it's actionable without opening the popup.
+- [x] **29.** Persist alarms + theme in `chrome.storage`.
+- [x] **30.** Toolbar badge counting down to the next alarm.
+- [x] **31.** Firefox variant: `browser_specific_settings.gecko.id`, `webextension-polyfill`, separate build target.
+- [x] **32.** Self-host or drop the Google-hosted `Bitter` webfont — MV3's default CSP blocks remote fonts. (`digital-7` is already local.)
+- [ ] **33.** Test load-unpacked in Chrome and via `about:debugging` in Firefox. **Yours to run** — automation cannot reach `chrome://extensions`.
 
 ## Phase 5 — Ship
 

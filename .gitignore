@@ -48,3 +48,5 @@ lerna-debug.log*
 *.local
 .env.local
 .env.*.local
+# extension builds
+dist-extension

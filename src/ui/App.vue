@@ -1,8 +1,6 @@
 <script setup>
-import { onMounted, watch } from 'vue'
-import { createWebPlatform } from '@/platform/web.js'
+import { inject, onMounted, watch } from 'vue'
 import { useClock } from '@/composables/useClock.js'
-import { useAlarms } from '@/composables/useAlarms.js'
 import { useTheme } from '@/composables/useTheme.js'
 import { formatDuration } from '@/core/time.js'
 import ClockDisplay from './ClockDisplay.vue'
@@ -11,25 +9,28 @@ import AlarmList from './AlarmList.vue'
 import RingingOverlay from './RingingOverlay.vue'
 import ThemePicker from './ThemePicker.vue'
 
-const platform = createWebPlatform()
+// Supplied by whichever entry point mounted this app — the web page or the
+// extension popup. The component itself must not know which.
+const platform = inject('platform')
 
 const { now } = useClock(platform)
 const { pending, upcoming, ringing, lateBy, firedWhileAway, error, alarms, setAtTime, setCountdown, cancel, dismiss, snoozeRinging } =
-    useAlarms(platform, now)
+    platform.createAlarms(now)
 const { theme, setTheme } = useTheme()
 
 onMounted(async () => {
     const state = await platform.loadState()
 
-    alarms.value = state.alarms
+    platform.hydrateAlarms(alarms, state.alarms)
     setTheme(state.theme)
 })
 
-watch(
-    [alarms, theme],
-    () => platform.saveState({ alarms: alarms.value, theme: theme.value }),
-    { deep: true }
-)
+watch(theme, (value) => platform.saveTheme(value))
+
+// The web platform owns its alarm list and persists it here. In the extension
+// the background worker owns it, and saveAlarms is a no-op — the list this
+// component sees is a mirror of the worker's state.
+watch(alarms, (value) => platform.saveAlarms(value), { deep: true })
 </script>
 
 <template>

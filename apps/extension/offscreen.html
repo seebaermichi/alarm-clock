@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Alarm audio</title>
+    </head>
+    <body>
+        <!--
+            Never visible. A Chrome MV3 service worker has no DOM and therefore
+            cannot play audio, so this document exists purely to host the
+            <audio> element the worker drives by message.
+        -->
+        <script type="module" src="./offscreen.js"></script>
+    </body>
+</html>

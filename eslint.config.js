@@ -37,8 +37,16 @@ export default [
         }
     },
     {
-        // Build and test configs run in Node.
-        files: ['*.config.js'],
+        // Extension code additionally sees chrome.* / browser.*.
+        files: ['apps/extension/**/*.js'],
+        languageOptions: {
+            globals: { ...globals.browser, ...globals.webextensions }
+        }
+    },
+    {
+        // Build and test configs run in Node. The second pattern catches the
+        // per-target configs, e.g. vite.config.extension.js.
+        files: ['*.config.js', '*.config.*.js'],
         languageOptions: {
             globals: globals.node
         }
