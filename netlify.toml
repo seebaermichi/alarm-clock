@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# The app is a single page now, so the /clock 404 you used to hit can't recur.
+# This fallback is belt-and-braces: any path still resolves to the app rather
+# than to Netlify's 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

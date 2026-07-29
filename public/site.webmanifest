@@ -1,6 +1,7 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "Alarm Clock",
+    "short_name": "Alarm",
+    "description": "A digital clock that rings at a set time or after a countdown.",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
@@ -13,7 +14,8 @@
             "type": "image/png"
         }
     ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
-    "display": "standalone"
+    "theme_color": "#0b0f0c",
+    "background_color": "#0b0f0c",
+    "display": "standalone",
+    "start_url": "/"
 }
