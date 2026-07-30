@@ -13,7 +13,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "build:extension": "vite build --config vite.config.extension.js",
-    "build:extension:firefox": "TARGET_BROWSER=firefox vite build --config vite.config.extension.js"
+    "build:extension:firefox": "TARGET_BROWSER=firefox vite build --config vite.config.extension.js",
+    "package:extension": "npm run build:extension && npm run build:extension:firefox && cd dist-extension/chrome && zip -qr ../alarm-clock-chrome.zip . && cd ../firefox && zip -qr ../alarm-clock-firefox.zip ."
   },
   "browserslist": [
     "> 1%",
