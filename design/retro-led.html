@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="retro-led" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alarm Clock — Retro LED</title>
+<style>
+/* Dark mode = 1970s red-LED clock radio. Light mode = classic gray LCD travel clock. */
+:root[data-mode=dark]{
+  --bg:#141210; --surface:#1c1917; --border:#332d27; --text:#c9c2b8; --muted:#7a7268;
+  --accent:#ff3b25; --accent-contrast:#1a0503; --danger:#ff3b25; --danger-contrast:#1a0503;
+  --display:#0a0505; --display-border:#000;
+  --seg-on:#ff3b25; --seg-off:rgba(255,60,30,.07);
+  --seg-glow:drop-shadow(0 0 4px rgba(255,60,30,.8)) drop-shadow(0 0 14px rgba(255,40,20,.45));
+  --key:linear-gradient(#2a2622,#1a1714); --key-border:#3a342c;
+}
+:root[data-mode=light]{
+  --bg:#e8e6da; --surface:#f4f2e8; --border:#c9c5b2; --text:#3a382e; --muted:#8a8676;
+  --accent:#3c4a38; --accent-contrast:#eef0e4; --danger:#b0402a; --danger-contrast:#fdf3ef;
+  --display:#c7cfb8; --display-border:#a9b199;
+  --seg-on:#2a3226; --seg-off:rgba(42,50,38,.09);
+  --seg-glow:none;
+  --key:linear-gradient(#fbf9f0,#e8e5d6); --key-border:#c9c5b2;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;transition:background-color .3s,color .3s}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem}
+h1{color:var(--muted);font-size:.95rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.mode-toggle{background:var(--surface);border:1px solid var(--border);border-radius:999px;color:var(--muted);padding:.4rem .9rem}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;padding:1rem 1.5rem 4rem}
+/* Housing + display window */
+.housing{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:22px 26px;box-shadow:0 14px 34px rgba(0,0,0,.25)}
+.window{background:var(--display);border:1px solid var(--display-border);border-radius:10px;padding:22px 26px 18px;display:flex;align-items:flex-end;gap:.5em;filter:var(--seg-glow)}
+/* Seven-segment digits, em-sized so seconds just use a smaller font-size */
+.d{position:relative;width:1em;height:1.8em;transform:skewX(-5deg)}
+.d i{position:absolute;background:var(--seg-off);border-radius:.04em}
+.d .a{left:.12em;right:.12em;top:0;height:.2em}
+.d .g{left:.12em;right:.12em;top:.8em;height:.2em}
+.d .dseg{left:.12em;right:.12em;bottom:0;height:.2em}
+.d .f{left:0;top:.1em;width:.2em;height:.72em}
+.d .b{right:0;top:.1em;width:.2em;height:.72em}
+.d .e{left:0;bottom:.1em;width:.2em;height:.72em}
+.d .c{right:0;bottom:.1em;width:.2em;height:.72em}
+.d i.on{background:var(--seg-on)}
+.big{font-size:64px;display:flex;gap:.28em}
+.small{font-size:34px;display:flex;gap:.28em;margin-left:.3em}
+.colon{display:flex;flex-direction:column;justify-content:center;gap:.5em;height:1.8em;font-size:64px;padding:0 .05em}
+.colon i{width:.16em;height:.16em;border-radius:50%;background:var(--seg-on)}
+.colon.off i{background:var(--seg-off)}
+/* indicator lamps under the display */
+.lamps{display:flex;gap:1.2rem;margin-top:12px;font-size:.7rem;letter-spacing:.14em;color:var(--muted)}
+.lamp{display:flex;align-items:center;gap:.4rem}
+.lamp i{width:8px;height:8px;border-radius:50%;background:var(--seg-off)}
+.lamp.on i{background:var(--seg-on);filter:var(--seg-glow)}
+.next{color:var(--muted);font-size:.95rem}
+/* Clock-radio plastic keys */
+.controls{display:flex;flex-direction:column;gap:1rem;align-items:center}
+.tabs{background:var(--display);border:1px solid var(--display-border);border-radius:8px;display:flex;padding:.2rem}
+.tab{background:none;border:0;border-radius:6px;color:var(--muted);padding:.4rem 1rem;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase}
+.tab.is-active{background:var(--seg-on);color:var(--accent-contrast)}
+.row{display:flex;align-items:center;gap:.5rem}
+.key{background:var(--key);border:1px solid var(--key-border);border-radius:8px;padding:.6rem 1rem;font-size:.85rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.key:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+input{background:var(--display);border:1px solid var(--display-border);border-radius:8px;color:var(--seg-on);font-size:1.4rem;font-weight:700;letter-spacing:.08em;padding:.4rem .8rem}
+input[type=number]{width:5rem;text-align:center}
+.submit{background:var(--accent);border:0;border-radius:8px;color:var(--accent-contrast);font-weight:700;letter-spacing:.1em;padding:.7rem 1.4rem;text-transform:uppercase;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.unit{color:var(--muted)}
+/* Ringing: display blinks, giant SNOOZE bar (the signature of these clocks) */
+.ringing{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.6rem;text-align:center;z-index:10}
+body.is-ringing .ringing{display:flex}
+.ringing .rtime{font-size:clamp(3.5rem,15vw,7rem);font-weight:700;color:var(--seg-on);filter:var(--seg-glow);letter-spacing:.06em;font-family:"Courier New",monospace;animation:blink 1s steps(1) infinite}
+.snooze-bar{width:min(480px,84vw);padding:1.4rem 0;border:1px solid var(--key-border);border-radius:14px;background:var(--key);font-size:1.1rem;font-weight:700;letter-spacing:.3em;text-transform:uppercase;box-shadow:0 4px 0 rgba(0,0,0,.3)}
+.snooze-bar:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.ringing .stop{background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:.7rem 1.2rem;letter-spacing:.1em;text-transform:uppercase;font-size:.85rem}
+.ringing .hint{font-size:.85rem;color:var(--muted)}
+@keyframes blink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Alarm Clock</h1>
+  <button class="mode-toggle" id="modeToggle" type="button">dark</button>
+</header>
+<main>
+  <div class="housing">
+    <div class="window" role="timer" aria-label="Current time">
+      <div class="big" id="bigDigits"></div>
+      <div class="colon" id="colon"><i></i><i></i></div>
+      <div class="big" id="minDigits"></div>
+      <div class="small" id="secDigits"></div>
+    </div>
+    <div class="lamps">
+      <span class="lamp" id="alarmLamp"><i></i>ALARM</span>
+      <span class="lamp" id="pmLamp"><i></i>PM</span>
+    </div>
+  </div>
+  <p class="next" id="next">No alarm set</p>
+  <section class="controls" aria-label="Alarm">
+    <div class="tabs" role="tablist"><button class="tab is-active" data-kind="at" role="tab" type="button">At a time</button><button class="tab" data-kind="in" role="tab" type="button">In a while</button></div>
+    <form class="row" id="atForm"><button class="key" type="button" data-step="-60">HR</button><button class="key" type="button" data-step="-5">MIN</button><input type="time" id="timeInput" value="07:30" required aria-label="Alarm time"><button class="key" type="button" data-step="5">MIN +</button><button class="key" type="button" data-step="60">HR +</button><button class="submit" type="submit">Set</button></form>
+    <form class="row" id="inForm" style="display:none"><input type="number" id="minInput" value="20" min="1" max="720" aria-label="Minutes"><span class="unit">min</span><button class="submit" type="submit">Set</button></form>
+  </section>
+</main>
+<div class="ringing" role="alertdialog" aria-label="Alarm ringing">
+  <div class="rtime" id="ringTime">7:30</div>
+  <button class="snooze-bar" id="snoozeBtn" type="button">Snooze</button>
+  <button class="stop" id="stopBtn" type="button">Alarm off</button>
+  <p class="hint">Space = snooze · Q = stop</p>
+</div>
+<script>
+const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,"0");
+let alarm=null,ctx=null,beepTimer=null;
+let mode=localStorage.getItem("clock-mode")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+function applyMode(){document.documentElement.dataset.mode=mode;$("#modeToggle").textContent=mode;}
+$("#modeToggle").onclick=()=>{mode=mode==="dark"?"light":"dark";localStorage.setItem("clock-mode",mode);applyMode();};applyMode();
+// seven-segment digits
+const SEG={0:"abcdef",1:"bc",2:"abged",3:"abgcd",4:"fgbc",5:"afgcd",6:"afgedc",7:"abc",8:"abcdefg",9:"abcdfg"};
+function makeDigit(){const d=document.createElement("div");d.className="d";
+  ["a","b","c","dseg","e","f","g"].forEach(s=>{const i=document.createElement("i");i.className=s;d.appendChild(i);});return d;}
+function setDigit(el,v){const on=SEG[v];el.querySelectorAll("i").forEach(i=>{const key=i.className.replace(" on","").replace("dseg","d");i.classList.toggle("on",on.includes(key));});}
+const bigH=[makeDigit(),makeDigit()],bigM=[makeDigit(),makeDigit()],smS=[makeDigit(),makeDigit()];
+bigH.forEach(d=>$("#bigDigits").appendChild(d));bigM.forEach(d=>$("#minDigits").appendChild(d));smS.forEach(d=>$("#secDigits").appendChild(d));
+// tabs
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("is-active",x===b));$("#atForm").style.display=b.dataset.kind==="at"?"":"none";$("#inForm").style.display=b.dataset.kind==="in"?"":"none";});
+// HR/MIN keys like the original hardware
+document.querySelectorAll(".key[data-step]").forEach(b=>b.onclick=()=>{const [h,m]=$("#timeInput").value.split(":").map(Number);const t=(h*60+m+parseInt(b.dataset.step)+1440)%1440;$("#timeInput").value=pad(Math.floor(t/60))+":"+pad(t%60);});
+$("#atForm").onsubmit=e=>{e.preventDefault();const[h,m]=$("#timeInput").value.split(":").map(Number);const t=new Date();t.setHours(h,m,0,0);if(t<=new Date())t.setDate(t.getDate()+1);setAlarm(t);};
+$("#inForm").onsubmit=e=>{e.preventDefault();setAlarm(new Date(Date.now()+$("#minInput").value*60000));};
+function setAlarm(t){alarm=t;ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();$("#alarmLamp").classList.add("on");updateNext();}
+function updateNext(){if(!alarm){$("#next").textContent="No alarm set";$("#alarmLamp").classList.remove("on");return;}const m=Math.max(0,Math.round((alarm-Date.now())/60000));$("#next").textContent=`Alarm ${pad(alarm.getHours())}:${pad(alarm.getMinutes())} — rings in ${Math.floor(m/60)}h ${m%60}m`;$("#ringTime").textContent=pad(alarm.getHours())+":"+pad(alarm.getMinutes());}
+// the authentic harsh pulsing buzzer
+function beep(){if(!ctx)return;[0,.12,.24,.36].forEach(dt=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="square";o.frequency.value=820;g.gain.setValueAtTime(.11,ctx.currentTime+dt);g.gain.setValueAtTime(.0001,ctx.currentTime+dt+.08);o.connect(g).connect(ctx.destination);o.start(ctx.currentTime+dt);o.stop(ctx.currentTime+dt+.09);});}
+function ring(){document.body.classList.add("is-ringing");beep();beepTimer=setInterval(beep,800);}
+function stopRing(){document.body.classList.remove("is-ringing");clearInterval(beepTimer);}
+function snooze(){stopRing();setAlarm(new Date(Date.now()+9*60000));}
+function stop(){stopRing();alarm=null;updateNext();}
+$("#snoozeBtn").onclick=snooze;$("#stopBtn").onclick=stop;
+addEventListener("keydown",e=>{if(!document.body.classList.contains("is-ringing"))return;if(e.code==="Space"){e.preventDefault();snooze();}if(e.key==="q"||e.key==="Escape")stop();});
+// tick: colon blinks on odd seconds, like the originals
+function loop(){const d=new Date();const h=d.getHours(),t=pad(h)+pad(d.getMinutes())+pad(d.getSeconds());
+setDigit(bigH[0],+t[0]);setDigit(bigH[1],+t[1]);setDigit(bigM[0],+t[2]);setDigit(bigM[1],+t[3]);setDigit(smS[0],+t[4]);setDigit(smS[1],+t[5]);
+$("#colon").classList.toggle("off",d.getSeconds()%2===1);
+$("#pmLamp").classList.toggle("on",h>=12);
+if(alarm){updateNext();if(!document.body.classList.contains("is-ringing")&&d>=alarm)ring();}
+setTimeout(loop,1000-d.getMilliseconds());}
+loop();
+</script>
+</body>
+</html>

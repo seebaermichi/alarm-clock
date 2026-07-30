@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="station" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alarm Clock — Station</title>
+<style>
+:root[data-mode=light]{
+  --bg:#f0efec; --surface:#ffffff; --border:#d8d6d0; --text:#1a1a18; --muted:#77736a;
+  --face:#ffffff; --face-border:#dcdad4; --hand:#1a1a18; --second:#d92b2b;
+  --accent:#d92b2b; --accent-contrast:#ffffff; --tab-active:#1a1a18; --tab-active-text:#ffffff;
+}
+:root[data-mode=dark]{
+  --bg:#141517; --surface:#1e1f22; --border:#2c2d31; --text:#e8e8e4; --muted:#8b8b86;
+  --face:#1e1f22; --face-border:#2c2d31; --hand:#e8e8e4; --second:#ff4d4d;
+  --accent:#d92b2b; --accent-contrast:#ffffff; --tab-active:#e8e8e4; --tab-active-text:#141517;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;transition:background-color .3s,color .3s}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem}
+h1{color:var(--muted);font-size:.95rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.mode-toggle{background:var(--surface);border:1px solid var(--border);border-radius:999px;color:var(--muted);padding:.4rem .9rem}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;padding:1rem 1.5rem 4rem}
+.dial{width:min(60vmin,380px);height:min(60vmin,380px)}
+.next{color:var(--muted);font-size:.95rem}
+.controls{display:flex;flex-direction:column;gap:1rem;align-items:center}
+.tabs{background:var(--surface);border:1px solid var(--border);border-radius:999px;display:flex;padding:.25rem}
+.tab{background:none;border:0;border-radius:999px;color:var(--muted);padding:.4rem 1rem}
+.tab.is-active{background:var(--tab-active);color:var(--tab-active-text)}
+.row{display:flex;align-items:center;gap:.5rem}
+input{background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:1.3rem;font-weight:600;letter-spacing:.04em;padding:.45rem .9rem}
+input[type=number]{width:5rem;text-align:center}
+.submit{background:var(--accent);border:0;border-radius:10px;color:var(--accent-contrast);font-weight:600;padding:.7rem 1.3rem}
+.unit{color:var(--muted)}
+/* Ringing: page floods signal red; click anywhere snoozes */
+.ringing{position:fixed;inset:0;background:var(--accent);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;text-align:center;z-index:10;cursor:pointer}
+body.is-ringing .ringing{display:flex}
+.ringing time{font-size:clamp(4rem,18vw,9rem);font-weight:700;letter-spacing:.02em}
+.ringing .sub{font-size:1.05rem;opacity:.9}
+.ringing .actions{display:flex;gap:.75rem;margin-top:.5rem}
+.ringing .snooze{background:#fff;border:0;border-radius:999px;color:#1a1a18;font-weight:600;padding:.85rem 1.6rem}
+.ringing .stop{background:none;border:1px solid rgba(255,255,255,.55);border-radius:999px;color:#fff;padding:.85rem 1.2rem}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Alarm Clock</h1>
+  <button class="mode-toggle" id="modeToggle" type="button">light</button>
+</header>
+<main>
+  <svg class="dial" viewBox="0 0 200 200" role="timer" aria-label="Current time">
+    <circle cx="100" cy="100" r="96" fill="var(--face)" stroke="var(--face-border)" stroke-width="1.5"></circle>
+    <g id="ticks"></g>
+    <line id="hourHand" x1="100" y1="104" x2="100" y2="48" stroke="var(--hand)" stroke-width="7" stroke-linecap="round"></line>
+    <line id="minHand" x1="100" y1="108" x2="100" y2="24" stroke="var(--hand)" stroke-width="5" stroke-linecap="round"></line>
+    <line id="secHand" x1="100" y1="118" x2="100" y2="22" stroke="var(--second)" stroke-width="2" stroke-linecap="round"></line>
+    <circle cx="100" cy="100" r="4.5" fill="var(--hand)"></circle>
+    <circle cx="100" cy="100" r="2.4" fill="var(--second)"></circle>
+  </svg>
+  <p class="next" id="next">No alarm set</p>
+  <section class="controls" aria-label="Alarm">
+    <div class="tabs" role="tablist"><button class="tab is-active" data-kind="at" role="tab" type="button">At a time</button><button class="tab" data-kind="in" role="tab" type="button">In a while</button></div>
+    <form class="row" id="atForm"><input type="time" id="timeInput" value="07:30" required aria-label="Alarm time"><button class="submit" type="submit">Set</button></form>
+    <form class="row" id="inForm" style="display:none"><input type="number" id="minInput" value="20" min="1" max="720" aria-label="Minutes"><span class="unit">min</span><button class="submit" type="submit">Set</button></form>
+  </section>
+</main>
+<div class="ringing" id="ringOverlay" role="alertdialog" aria-label="Alarm ringing">
+  <time id="ringTime">07:30</time>
+  <p class="sub">Alarm — click anywhere to snooze 9 min</p>
+  <div class="actions"><button class="snooze" id="snoozeBtn" type="button">Snooze 9 min</button><button class="stop" id="stopBtn" type="button">Stop</button></div>
+</div>
+<script>
+const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,"0");
+let alarm=null,ctx=null,beepTimer=null,lastSec=-1;
+let mode=localStorage.getItem("clock-mode")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+function applyMode(){document.documentElement.dataset.mode=mode;$("#modeToggle").textContent=mode;}
+$("#modeToggle").onclick=()=>{mode=mode==="dark"?"light":"dark";localStorage.setItem("clock-mode",mode);applyMode();};applyMode();
+// build dial: 12 batons + 48 minute ticks
+const NS="http://www.w3.org/2000/svg",ticks=$("#ticks");
+for(let i=0;i<60;i++){const l=document.createElementNS(NS,"line");const baton=i%5===0;
+  l.setAttribute("x1",100);l.setAttribute("x2",100);l.setAttribute("y1",11);l.setAttribute("y2",baton?29:17);
+  l.setAttribute("stroke","var(--hand)");l.setAttribute("stroke-width",baton?6:1.6);
+  l.setAttribute("transform",`rotate(${i*6} 100 100)`);ticks.appendChild(l);}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("is-active",x===b));$("#atForm").style.display=b.dataset.kind==="at"?"":"none";$("#inForm").style.display=b.dataset.kind==="in"?"":"none";});
+$("#atForm").onsubmit=e=>{e.preventDefault();const[h,m]=$("#timeInput").value.split(":").map(Number);const t=new Date();t.setHours(h,m,0,0);if(t<=new Date())t.setDate(t.getDate()+1);setAlarm(t);};
+$("#inForm").onsubmit=e=>{e.preventDefault();setAlarm(new Date(Date.now()+$("#minInput").value*60000));};
+function setAlarm(t){alarm=t;ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();updateNext();}
+function updateNext(){if(!alarm){$("#next").textContent="No alarm set";return;}const m=Math.max(0,Math.round((alarm-Date.now())/60000));$("#next").textContent=`Alarm ${pad(alarm.getHours())}:${pad(alarm.getMinutes())} — rings in ${Math.floor(m/60)}h ${m%60}m`;$("#ringTime").textContent=pad(alarm.getHours())+":"+pad(alarm.getMinutes());}
+// crisp double-strike bell
+function beep(){if(!ctx)return;[0,.18].forEach(dt=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=1200;g.gain.setValueAtTime(.16,ctx.currentTime+dt);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dt+.25);o.connect(g).connect(ctx.destination);o.start(ctx.currentTime+dt);o.stop(ctx.currentTime+dt+.3);});}
+function ring(){document.body.classList.add("is-ringing");beep();beepTimer=setInterval(beep,900);}
+function stopRing(){document.body.classList.remove("is-ringing");clearInterval(beepTimer);}
+function snooze(){stopRing();setAlarm(new Date(Date.now()+9*60000));}
+function stop(){stopRing();alarm=null;updateNext();}
+$("#ringOverlay").onclick=snooze;
+$("#snoozeBtn").onclick=e=>{e.stopPropagation();snooze();};
+$("#stopBtn").onclick=e=>{e.stopPropagation();stop();};
+addEventListener("keydown",e=>{if(!document.body.classList.contains("is-ringing"))return;if(e.code==="Space"){e.preventDefault();snooze();}if(e.key==="q"||e.key==="Escape")stop();});
+// rAF loop: station clocks sweep-then-snap; here a smooth sweep on the second hand
+function loop(){const d=new Date(),ms=d.getMilliseconds();
+const sec=d.getSeconds()+ms/1000,min=d.getMinutes()+d.getSeconds()/60,hr=(d.getHours()%12)+d.getMinutes()/60;
+$("#secHand").setAttribute("transform",`rotate(${sec*6} 100 100)`);
+$("#minHand").setAttribute("transform",`rotate(${min*6} 100 100)`);
+$("#hourHand").setAttribute("transform",`rotate(${hr*30} 100 100)`);
+if(d.getSeconds()!==lastSec){lastSec=d.getSeconds();if(alarm){updateNext();if(!document.body.classList.contains("is-ringing")&&d>=alarm)ring();}}
+requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

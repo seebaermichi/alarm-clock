@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="split-flap" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alarm Clock — Split-Flap</title>
+<style>
+/* THEME CONTRACT: same var names as the existing app, plus data-mode axis.
+   Theme-specific extras are prefixed --sf- (card faces, seam). */
+:root[data-mode=dark]{
+  --bg:#17181b; --surface:#232427; --border:#35363b; --text:#efefec; --muted:#8b8b86;
+  --digit:#efefec; --digit-dim:#a7a7a2; --accent:#e8a33d; --accent-contrast:#1a1104;
+  --danger:#ef4444; --danger-contrast:#1a0505; --glow:none;
+  --sf-card:linear-gradient(#2b2c30,#1f2023); --sf-card-sm:linear-gradient(#26272b,#1d1e21);
+  --sf-card-border:transparent; --sf-seam:rgba(0,0,0,.55);
+  --sf-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 8px 20px rgba(0,0,0,.5);
+}
+:root[data-mode=light]{
+  --bg:#eceae3; --surface:#ffffff; --border:#d9d7cf; --text:#26262a; --muted:#77736a;
+  --digit:#26262a; --digit-dim:#77736a; --accent:#d98f1f; --accent-contrast:#241503;
+  --danger:#dc2626; --danger-contrast:#ffffff; --glow:none;
+  --sf-card:linear-gradient(#ffffff,#f0efeb); --sf-card-sm:linear-gradient(#fbfaf7,#eeede8);
+  --sf-card-border:#d9d7cf; --sf-seam:rgba(0,0,0,.1);
+  --sf-shadow:0 3px 8px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;transition:background-color .3s,color .3s}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem}
+h1{color:var(--muted);font-size:.95rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.mode-toggle{background:var(--surface);border:1px solid var(--border);border-radius:999px;color:var(--muted);padding:.4rem .9rem}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;padding:1rem 1.5rem 4rem}
+/* Flip board */
+.board{display:flex;align-items:flex-end;gap:14px}
+.group{display:flex;gap:6px}
+.card{position:relative;width:92px;height:132px;background:var(--sf-card);border:1px solid var(--sf-card-border);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:var(--sf-shadow)}
+.card span{font-size:84px;line-height:1;font-weight:700;color:var(--digit)}
+.card::after{content:"";position:absolute;left:0;right:0;top:50%;height:3px;margin-top:-1px;background:var(--sf-seam)}
+.card--s{width:56px;height:82px}.card--s span{font-size:48px;color:var(--digit-dim)}.card--s::after{height:2px}
+/* flip transition: on change, top half rotates via .card.is-flipping (see README) */
+.next{color:var(--muted);font-size:.95rem}
+.controls{display:flex;flex-direction:column;gap:1rem;align-items:center}
+.tabs{background:var(--surface);border:1px solid var(--border);border-radius:999px;display:flex;padding:.25rem}
+.tab{background:none;border:0;border-radius:999px;color:var(--muted);padding:.4rem 1rem}
+.tab.is-active{background:var(--accent);color:var(--accent-contrast)}
+.row{display:flex;align-items:center;gap:.5rem}
+.step{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface)}
+input{background:var(--sf-card);border:1px solid var(--sf-card-border);border-radius:8px;font-size:1.8rem;font-weight:700;letter-spacing:.06em;padding:.35rem .75rem;color:var(--digit)}
+input[type=number]{width:5.5rem;text-align:center}
+.submit{background:var(--accent);border:0;border-radius:8px;color:var(--accent-contrast);font-size:.95rem;font-weight:700;letter-spacing:.1em;padding:.7rem 1.3rem}
+.unit{color:var(--muted)}
+/* Ringing overlay: black departure-board rail takes over */
+.ringing{position:fixed;inset:0;background:#0c0c0e;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.4rem;text-align:center;z-index:10}
+body.is-ringing .ringing{display:flex}
+.ringing .label{display:flex;align-items:center;gap:10px;font-size:.9rem;font-weight:700;letter-spacing:.24em;color:var(--accent)}
+.ringing .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);animation:blink 1s steps(1) infinite}
+.ringing time{font-size:clamp(4rem,18vw,9rem);font-weight:700;color:#efefec;letter-spacing:.04em}
+.ringing .actions{display:flex;gap:.75rem;margin-top:.5rem}
+.ringing .snooze{background:var(--accent);border:0;border-radius:8px;color:var(--accent-contrast);font-weight:700;font-size:1rem;padding:.9rem 1.6rem}
+.ringing .stop{background:none;border:1px solid #3a3b40;border-radius:8px;color:#9a9a96;padding:.9rem 1.2rem}
+.ringing .hint{font-size:.85rem;color:#6d6d68}
+@keyframes blink{50%{opacity:.15}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Alarm Clock</h1>
+  <button class="mode-toggle" id="modeToggle" type="button">dark</button>
+</header>
+<main>
+  <div class="board" role="timer" aria-label="Current time">
+    <div class="group"><div class="card"><span data-d="h1">0</span></div><div class="card"><span data-d="h2">0</span></div></div>
+    <div class="group"><div class="card"><span data-d="m1">0</span></div><div class="card"><span data-d="m2">0</span></div></div>
+    <div class="group"><div class="card card--s"><span data-d="s1">0</span></div><div class="card card--s"><span data-d="s2">0</span></div></div>
+  </div>
+  <p class="next" id="next">No alarm set</p>
+  <section class="controls" aria-label="Alarm">
+    <div class="tabs" role="tablist"><button class="tab is-active" data-kind="at" role="tab" type="button">At a time</button><button class="tab" data-kind="in" role="tab" type="button">In a while</button></div>
+    <form class="row" id="atForm"><button class="step" type="button" data-step="-5">−</button><input type="time" id="timeInput" value="07:30" required aria-label="Alarm time"><button class="step" type="button" data-step="5">+</button><button class="submit" type="submit">SET</button></form>
+    <form class="row" id="inForm" style="display:none"><input type="number" id="minInput" value="20" min="1" max="720" aria-label="Minutes"><span class="unit">min</span><button class="submit" type="submit">SET</button></form>
+  </section>
+</main>
+<div class="ringing" role="alertdialog" aria-label="Alarm ringing">
+  <div class="label"><span class="dot"></span>WAKE UP</div>
+  <time id="ringTime">07:30</time>
+  <div class="actions"><button class="snooze" id="snoozeBtn" type="button">SNOOZE 9 MIN</button><button class="stop" id="stopBtn" type="button">STOP</button></div>
+  <p class="hint">Space = snooze · Q = stop</p>
+</div>
+<script>
+const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,"0");
+let alarm=null,ctx=null,beepTimer=null;
+// mode
+let mode=localStorage.getItem("clock-mode")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+function applyMode(){document.documentElement.dataset.mode=mode;$("#modeToggle").textContent=mode;}
+$("#modeToggle").onclick=()=>{mode=mode==="dark"?"light":"dark";localStorage.setItem("clock-mode",mode);applyMode();};applyMode();
+// tabs
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("is-active",x===b));$("#atForm").style.display=b.dataset.kind==="at"?"":"none";$("#inForm").style.display=b.dataset.kind==="in"?"":"none";});
+// steppers flip the target time in 5-min increments
+document.querySelectorAll(".step").forEach(b=>b.onclick=()=>{const [h,m]=$("#timeInput").value.split(":").map(Number);const t=(h*60+m+parseInt(b.dataset.step)+1440)%1440;$("#timeInput").value=pad(Math.floor(t/60))+":"+pad(t%60);});
+// set
+$("#atForm").onsubmit=e=>{e.preventDefault();const[h,m]=$("#timeInput").value.split(":").map(Number);const t=new Date();t.setHours(h,m,0,0);if(t<=new Date())t.setDate(t.getDate()+1);setAlarm(t);};
+$("#inForm").onsubmit=e=>{e.preventDefault();setAlarm(new Date(Date.now()+$("#minInput").value*60000));};
+function setAlarm(t){alarm=t;ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();updateNext();}
+function updateNext(){if(!alarm){$("#next").textContent="No alarm set";return;}const m=Math.max(0,Math.round((alarm-Date.now())/60000));$("#next").textContent=`Alarm ${pad(alarm.getHours())}:${pad(alarm.getMinutes())} — rings in ${Math.floor(m/60)}h ${m%60}m`;$("#ringTime").textContent=pad(alarm.getHours())+":"+pad(alarm.getMinutes());}
+// audio: two short square beeps like a mechanical board buzzer
+function beep(){if(!ctx)return;[0,.25].forEach(dt=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="square";o.frequency.value=880;g.gain.setValueAtTime(.1,ctx.currentTime+dt);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dt+.15);o.connect(g).connect(ctx.destination);o.start(ctx.currentTime+dt);o.stop(ctx.currentTime+dt+.2);});}
+function ring(){document.body.classList.add("is-ringing");beep();beepTimer=setInterval(beep,1000);}
+function stopRing(){document.body.classList.remove("is-ringing");clearInterval(beepTimer);}
+function snooze(){stopRing();setAlarm(new Date(Date.now()+9*60000));}
+function stop(){stopRing();alarm=null;updateNext();}
+$("#snoozeBtn").onclick=snooze;$("#stopBtn").onclick=stop;
+addEventListener("keydown",e=>{if(!document.body.classList.contains("is-ringing"))return;if(e.code==="Space"){e.preventDefault();snooze();}if(e.key==="q"||e.key==="Escape")stop();});
+// tick (aligned to the second)
+function loop(){const d=new Date();const t=pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds());["h1","h2","m1","m2","s1","s2"].forEach((k,i)=>{const el=document.querySelector(`[data-d=${k}]`);if(el.textContent!==t[i])el.textContent=t[i];});
+if(alarm){updateNext();if(!document.body.classList.contains("is-ringing")&&d>=alarm)ring();}
+setTimeout(loop,1000-d.getMilliseconds());}
+loop();
+</script>
+</body>
+</html>

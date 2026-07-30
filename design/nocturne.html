@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="nocturne" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alarm Clock — Nocturne</title>
+<style>
+:root[data-mode=dark]{
+  --bg:#080a08; --surface:#0e130f; --border:#24322a; --text:#baffd2; --muted:#5d7d6a;
+  --face:#0e120e; --face-border:#1d251d; --lume:#baffd2; --hand:#cfffdd; --second:#ff8c5a;
+  --accent:#baffd2; --accent-contrast:#06140b;
+  --glow:0 0 12px rgba(186,255,210,.35); --lume-halo:rgba(186,255,210,.14);
+}
+:root[data-mode=light]{
+  --bg:#eef1ec; --surface:#ffffff; --border:#ccd8cc; --text:#3c5a47; --muted:#7e937f;
+  --face:#f9fbf7; --face-border:#dde4da; --lume:#5f8a6e; --hand:#3c5a47; --second:#d97a4a;
+  --accent:#3c5a47; --accent-contrast:#ffffff;
+  --glow:none; --lume-halo:transparent;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;transition:background-color .3s,color .3s}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem}
+h1{color:var(--muted);font-size:.95rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.mode-toggle{background:var(--surface);border:1px solid var(--border);border-radius:999px;color:var(--muted);padding:.4rem .9rem}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;padding:1rem 1.5rem 4rem}
+.dial{width:min(60vmin,380px);height:min(60vmin,380px)}
+.next{color:var(--muted);font-size:.95rem}
+.controls{display:flex;flex-direction:column;gap:1rem;align-items:center}
+.row{display:flex;align-items:center;gap:.7rem}
+.wake-label{font-size:.8rem;color:var(--muted);letter-spacing:.12em}
+.step{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:1.05rem}
+.wake-time{font-size:1.6rem;font-weight:600;color:var(--text);text-shadow:var(--glow);letter-spacing:.06em;min-width:5.2rem;text-align:center}
+.submit{border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);font-size:.85rem;font-weight:600;letter-spacing:.14em;padding:.7rem 1.3rem}
+.submit.is-armed{background:var(--accent);color:var(--accent-contrast)}
+/* Ringing: gentle brightening; the whole screen is the snooze button */
+.ringing{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;text-align:center;z-index:10;cursor:pointer;animation:dawn 20s linear forwards}
+body.is-ringing .ringing{display:flex}
+.ringing time{font-size:clamp(4rem,18vw,9rem);font-weight:600;color:var(--text);text-shadow:var(--glow);animation:pulse 2s ease-in-out infinite}
+.ringing .sub{font-size:1.15rem;font-weight:600;color:var(--text)}
+.ringing .stop{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:.9rem;margin-top:.5rem}
+@keyframes dawn{to{filter:brightness(1.9)}}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Alarm Clock</h1>
+  <button class="mode-toggle" id="modeToggle" type="button">dark</button>
+</header>
+<main>
+  <svg class="dial" viewBox="0 0 200 200" role="timer" aria-label="Current time">
+    <circle cx="100" cy="100" r="96" fill="var(--face)" stroke="var(--face-border)" stroke-width="1.5"></circle>
+    <g id="marks"></g>
+    <line id="hourHand" x1="100" y1="104" x2="100" y2="52" stroke="var(--hand)" stroke-width="5.5" stroke-linecap="round"></line>
+    <line id="minHand" x1="100" y1="108" x2="100" y2="28" stroke="var(--hand)" stroke-width="4" stroke-linecap="round"></line>
+    <line id="secHand" x1="100" y1="114" x2="100" y2="24" stroke="var(--second)" stroke-width="1.8" stroke-linecap="round"></line>
+    <circle cx="100" cy="100" r="4" fill="var(--lume)"></circle>
+  </svg>
+  <p class="next" id="next">No alarm set</p>
+  <section class="controls" aria-label="Alarm">
+    <!-- Night ergonomics: no typing — big steps only, 5 min per tap, hold to repeat -->
+    <div class="row">
+      <span class="wake-label">WAKE AT</span>
+      <button class="step" type="button" data-step="-5">−</button>
+      <span class="wake-time" id="wakeTime">07:30</span>
+      <button class="step" type="button" data-step="5">+</button>
+      <button class="submit" id="armBtn" type="button">ARM</button>
+    </div>
+  </section>
+</main>
+<div class="ringing" id="ringOverlay" role="alertdialog" aria-label="Alarm ringing">
+  <time id="ringTime">07:30</time>
+  <p class="sub">Tap anywhere to snooze</p>
+  <button class="stop" id="stopBtn" type="button">stop</button>
+</div>
+<script>
+const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,"0");
+let alarm=null,ctx=null,beepTimer=null,lastSec=-1,wake=7*60+30;
+let mode=localStorage.getItem("clock-mode")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+function applyMode(){document.documentElement.dataset.mode=mode;$("#modeToggle").textContent=mode;}
+$("#modeToggle").onclick=()=>{mode=mode==="dark"?"light":"dark";localStorage.setItem("clock-mode",mode);applyMode();};applyMode();
+// dial marks: 12 lume dots with soft halo, quarters bigger
+const NS="http://www.w3.org/2000/svg",marks=$("#marks");
+for(let i=0;i<12;i++){const a=i*30*Math.PI/180,x=100+80*Math.sin(a),y=100-80*Math.cos(a),q=i%3===0;
+  const halo=document.createElementNS(NS,"circle");halo.setAttribute("cx",x);halo.setAttribute("cy",y);halo.setAttribute("r",q?9:5.5);halo.setAttribute("fill","var(--lume-halo)");marks.appendChild(halo);
+  const dot=document.createElementNS(NS,"circle");dot.setAttribute("cx",x);dot.setAttribute("cy",y);dot.setAttribute("r",q?3.6:2.4);dot.setAttribute("fill","var(--lume)");marks.appendChild(dot);}
+// steppers (hold to repeat)
+function renderWake(){$("#wakeTime").textContent=pad(Math.floor(wake/60))+":"+pad(wake%60);}
+document.querySelectorAll(".step").forEach(b=>{let rep;const bump=()=>{wake=(wake+parseInt(b.dataset.step)+1440)%1440;renderWake();};
+  b.onclick=bump;b.onpointerdown=()=>{rep=setInterval(bump,180);};["pointerup","pointerleave"].forEach(ev=>b.addEventListener(ev,()=>clearInterval(rep)));});
+$("#armBtn").onclick=()=>{if(alarm){alarm=null;$("#armBtn").classList.remove("is-armed");$("#armBtn").textContent="ARM";updateNext();return;}
+  const t=new Date();t.setHours(Math.floor(wake/60),wake%60,0,0);if(t<=new Date())t.setDate(t.getDate()+1);
+  alarm=t;ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();$("#armBtn").classList.add("is-armed");$("#armBtn").textContent="ARMED";updateNext();};
+function updateNext(){if(!alarm){$("#next").textContent="No alarm set";return;}const m=Math.max(0,Math.round((alarm-Date.now())/60000));$("#next").textContent=`Alarm ${pad(alarm.getHours())}:${pad(alarm.getMinutes())} — rings in ${Math.floor(m/60)}h ${m%60}m`;$("#ringTime").textContent=pad(alarm.getHours())+":"+pad(alarm.getMinutes());}
+// gentle ramp: soft sine chime, volume grows over the first 30s
+let ringStart=0;
+function beep(){if(!ctx)return;const vol=Math.min(.15,.02+(Date.now()-ringStart)/30000*.13);
+  const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=520;g.gain.setValueAtTime(vol,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.8);o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+.85);}
+function ring(){ringStart=Date.now();document.body.classList.add("is-ringing");beep();beepTimer=setInterval(beep,1600);}
+function stopRing(){document.body.classList.remove("is-ringing");clearInterval(beepTimer);}
+function snooze(){stopRing();alarm=new Date(Date.now()+9*60000);updateNext();}
+function stop(){stopRing();alarm=null;$("#armBtn").classList.remove("is-armed");$("#armBtn").textContent="ARM";updateNext();}
+$("#ringOverlay").onclick=snooze;
+$("#stopBtn").onclick=e=>{e.stopPropagation();stop();};
+addEventListener("keydown",e=>{if(!document.body.classList.contains("is-ringing"))return;if(e.key==="q"||e.key==="Escape"){stop();return;}e.preventDefault();snooze();});
+function loop(){const d=new Date();
+const sec=d.getSeconds()+d.getMilliseconds()/1000,min=d.getMinutes()+d.getSeconds()/60,hr=(d.getHours()%12)+d.getMinutes()/60;
+$("#secHand").setAttribute("transform",`rotate(${sec*6} 100 100)`);
+$("#minHand").setAttribute("transform",`rotate(${min*6} 100 100)`);
+$("#hourHand").setAttribute("transform",`rotate(${hr*30} 100 100)`);
+if(d.getSeconds()!==lastSec){lastSec=d.getSeconds();if(alarm){updateNext();if(!document.body.classList.contains("is-ringing")&&d>=alarm)ring();}}
+requestAnimationFrame(loop);}
+renderWake();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
