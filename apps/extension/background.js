@@ -85,7 +85,15 @@ async function ring(alarm) {
 
     // Independent channels. A failure in one must not silence the others —
     // losing audio should never also cost you the notification.
-    await Promise.allSettled([playAlarm(), notify(alarm), updateBadge()])
+    const results = await Promise.allSettled([playAlarm(), notify(alarm), updateBadge()])
+
+    // allSettled swallows rejections by design, which is right for behaviour
+    // and wrong for diagnosis. Surface them.
+    results
+        .filter((result) => result.status === 'rejected')
+        .forEach((result, index) => {
+            console.error(`[alarm-clock] ring channel ${index} failed`, result.reason)
+        })
 }
 
 async function stopRinging() {
@@ -117,8 +125,14 @@ async function ensureOffscreen() {
             reasons: ['AUDIO_PLAYBACK'],
             justification: 'Play the alarm sound when an alarm fires.'
         })
+
+        console.info('[alarm-clock] offscreen document created')
     } catch (error) {
-        if (!String(error).includes('single offscreen document')) throw error
+        if (String(error).includes('single offscreen document')) return
+
+        console.error('[alarm-clock] offscreen creation failed', error)
+        await browser.storage.local.set({ audioError: `offscreen: ${error}` })
+        throw error
     }
 }
 
@@ -126,8 +140,9 @@ let firefoxAudio = null
 
 async function playAlarm() {
     if (isChrome) {
-        // Creating the document is the whole trigger — it reads `ringing` from
-        // storage on load and starts itself. No message, so nothing to race.
+        // Creating the document is the whole trigger: it starts playing on load
+        // and has no state to consult. Note it may only use chrome.runtime, so
+        // it could not consult storage even if we wanted it to.
         await ensureOffscreen()
         return
     }
@@ -225,6 +240,13 @@ browser.notifications.onClicked.addListener(async (id) => {
 })
 
 browser.runtime.onMessage.addListener((message) => {
+    // The offscreen document cannot log anywhere the user is likely to look,
+    // so it forwards audio failures here instead.
+    if (message?.type === 'AUDIO_ERROR') {
+        console.error('[alarm-clock] offscreen audio failed —', message.message)
+        return browser.storage.local.set({ audioError: message.message })
+    }
+
     switch (message?.type) {
         case 'ADD_ALARM':
             return addAndSchedule(message.at)
@@ -255,6 +277,10 @@ async function boot() {
 
     await browser.alarms.create(BADGE_TICK, { periodInMinutes: 1 })
     await updateBadge()
+
+    console.info(
+        `[alarm-clock] booted — audio path: ${isChrome ? 'offscreen (chrome)' : 'background page (firefox)'}`
+    )
 }
 
 browser.runtime.onStartup.addListener(boot)
