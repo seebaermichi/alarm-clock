@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Alarm clock">
+    <circle cx="35.1" cy="25.55" r="9.05" fill="#22c55e"/>
+    <circle cx="92.9" cy="25.55" r="9.05" fill="#22c55e"/>
+    <circle cx="64" cy="60" r="37" fill="none" stroke="#22c55e" stroke-width="10"/>
+    <polyline points="47.6,50.4 63.9,60.25 85.6,47.45" fill="none" stroke="#86efac"
+        stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
