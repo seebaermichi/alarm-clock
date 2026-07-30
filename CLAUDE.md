@@ -38,12 +38,16 @@ Both encode bugs that already happened. Don't undo them.
 ```
 src/core/         pure, no DOM, no browser APIs — the only unit-tested layer
 src/ui/           Vue 3 SFCs, <script setup>, shared by web page and popup
+src/ui/faces/     per-theme clock faces (ClockDisplay.vue dispatches on theme)
+src/ui/controls/  per-theme alarm controls (AlarmControls.vue dispatches)
+src/ui/ringing/   per-theme ringing overlays (RingingOverlay.vue dispatches)
 src/composables/  useClock, useAlarms (web), useExtensionAlarms (popup), useTheme
 src/platform/     web.js | extension.js — same interface, different guts
 src/styles/       themes.scss, base.scss, popup.scss
 src/workers/      ticker.js
 apps/web/         index.html, main.js
 apps/extension/   manifest.js, background.js, popup.*, offscreen.*
+design/           the six theme prototypes + handoff README (reference, not built)
 ```
 
 `src/core/` must stay free of browser APIs — it's what makes the logic testable in Node.
@@ -64,12 +68,16 @@ Chrome/Firefox divergence lives in `apps/extension/manifest.js`: `service_worker
 
 Both extension targets verified working end to end: rings with the popup closed, sound plays, countdown badge updates (plus notification action buttons on Chrome, which Firefox does not support).
 
+The six designer themes (design/README.md) are implemented in web and popup builds; web verified in-browser (faces, controls, ring overlays, persistence). Extension popup rendering of the new themes still needs a manual check after reloading the unpacked extension.
+
 Firefox worked throughout, including while Chrome was silent — it plays from its background page and never creates an offscreen document, so the `chrome.storage` fault could not reach it. Useful signal if the audio paths ever diverge again: a failure in one target says nothing about the other.
 
 ## Conventions
 
 - Composition API with `<script setup>`. No Options API in current code.
 - Formatting per `.prettierrc`: 4-space indent, single quotes, no semicolons. Run `npm run lint`.
-- No component hard-codes a colour; everything reads CSS custom properties from `styles/themes.scss` so a sixth theme touches one file. The only exception is the theme-picker swatches, which must show their own theme's colours.
-- Keep the ghost-`8` trick in `ClockDigit.vue` (a dim `8` behind each digit holds the glyph width so the proportional LCD font doesn't jitter). Inherited from the original exercise.
+- Themes are two axes on `<html>`: `data-theme` (basic · split-flap · retro-led · terminal · station · nocturne · riviera) picks a structurally different face/controls/ringing set, `data-mode` (dark · light) its variant. Both persisted via the platform; mode defaults from `prefers-color-scheme`. Token source of truth is the prototypes in `design/*.html`.
+- No component hard-codes a colour; everything reads CSS custom properties from `styles/themes.scss`. Shared names (`--bg --surface --border --text --muted --digit --accent --accent-contrast --danger --danger-contrast --glow --font-ui --font-time`) exist in every theme×mode block; theme-structural extras are namespaced (`--sf-*`, `--seg-*`, `--face`/`--hand`, `--shape-*`…).
+- Each theme ships its own WebAudio ring recipe (`src/platform/sounds.js`, web only — the extension worker keeps its mp3). Snooze is 9 min everywhere except Terminal's 5 (`snoozeMinutesFor`).
+- Keep the ghost-`8` trick in `ClockDigit.vue` (a dim `8` behind each digit holds the glyph width so the proportional LCD font doesn't jitter). It, and the digital-7 font, now serve only the `basic` theme's face.
 - Commit messages: short lowercase imperative subject; explain *why* in the body.
