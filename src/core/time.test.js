@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pad2, digitsOf, formatClock, formatDuration } from './time.js'
+import { pad2, digitsOf, formatClock, formatDuration, formatRingsIn } from './time.js'
 
 describe('pad2', () => {
     it('pads single digits', () => {
@@ -41,5 +41,16 @@ describe('formatDuration', () => {
 
     it('clamps overdue durations to zero rather than going negative', () => {
         expect(formatDuration(-5000)).toBe('0:00')
+    })
+})
+
+describe('formatRingsIn', () => {
+    it('always shows hours and minutes', () => {
+        expect(formatRingsIn(9 * 3_600_000 + 52 * 60_000)).toBe('9h 52m')
+        expect(formatRingsIn(20 * 60_000)).toBe('0h 20m')
+    })
+
+    it('clamps overdue alarms to zero', () => {
+        expect(formatRingsIn(-5000)).toBe('0h 0m')
     })
 })

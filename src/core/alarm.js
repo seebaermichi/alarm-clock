@@ -10,6 +10,8 @@
  * never silence. That single change is the fix for the headline bug.
  */
 
+import { pad2 } from './time.js'
+
 const MINUTE_MS = 60_000
 
 export const DEFAULT_SNOOZE_MINUTES = 9
@@ -48,6 +50,22 @@ export function nextOccurrence(hhmm, now = Date.now()) {
     }
 
     return target.getTime()
+}
+
+/**
+ * Shift an 'HH:MM' value by whole minutes, wrapping around midnight — the
+ * ± stepper keys on the Split-Flap and Retro LED themes. Returns the input
+ * unchanged when it isn't a parseable time.
+ */
+export function shiftTimeInput(hhmm, deltaMinutes) {
+    const parsed = parseTimeInput(hhmm)
+
+    if (!parsed) return hhmm
+
+    const day = 24 * 60
+    const total = (((parsed.hours * 60 + parsed.minutes + deltaMinutes) % day) + day) % day
+
+    return `${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`
 }
 
 /** An instant `minutes` from now. Used by the countdown input and by snooze. */

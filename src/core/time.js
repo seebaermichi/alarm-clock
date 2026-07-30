@@ -48,3 +48,14 @@ export function formatDuration(ms) {
         ? `${hours}:${pad2(minutes)}:${pad2(seconds)}`
         : `${minutes}:${pad2(seconds)}`
 }
+
+/**
+ * Coarse countdown for the "rings in" line, e.g. '9h 52m'.
+ * Always shows both units — the design prototypes do, and a stable shape
+ * keeps the line from jumping as the hour boundary passes.
+ */
+export function formatRingsIn(ms) {
+    const total = Math.max(0, Math.round(ms / 60_000))
+
+    return `${Math.floor(total / 60)}h ${total % 60}m`
+}

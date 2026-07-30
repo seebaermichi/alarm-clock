@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { formatClock } from './time.js'
 import {
     parseTimeInput,
+    shiftTimeInput,
     nextOccurrence,
     fromCountdown,
     snooze,
@@ -127,5 +128,23 @@ describe('dueAlarms', () => {
         const alarms = addAlarm([], createAlarm(at(14, 30)))
 
         expect(dueAlarms(alarms, at(14, 29, 59))).toHaveLength(0)
+    })
+})
+
+describe('shiftTimeInput', () => {
+    it('steps forward and back, zero-padded', () => {
+        expect(shiftTimeInput('07:30', 5)).toBe('07:35')
+        expect(shiftTimeInput('07:30', -5)).toBe('07:25')
+        expect(shiftTimeInput('07:30', 60)).toBe('08:30')
+    })
+
+    it('wraps around midnight in both directions', () => {
+        expect(shiftTimeInput('23:58', 5)).toBe('00:03')
+        expect(shiftTimeInput('00:02', -5)).toBe('23:57')
+    })
+
+    it('returns unparseable input unchanged', () => {
+        expect(shiftTimeInput('', 5)).toBe('')
+        expect(shiftTimeInput('99:99', 5)).toBe('99:99')
     })
 })
