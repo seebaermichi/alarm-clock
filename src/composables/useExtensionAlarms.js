@@ -66,6 +66,7 @@ export function useExtensionAlarms(now) {
         error,
         setAtTime: (hhmm) => arm(nextOccurrence(hhmm, Date.now())),
         setCountdown: (minutes) => arm(fromCountdown(minutes, Date.now())),
+        setAt: (at) => arm(Number.isFinite(at) && at > Date.now() ? at : null),
         cancel: (id) => send({ type: 'CANCEL_ALARM', id }),
         dismiss: () => send({ type: 'STOP' }),
         snoozeRinging: (minutes) => send({ type: 'SNOOZE', minutes })

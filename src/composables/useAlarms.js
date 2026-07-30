@@ -75,6 +75,9 @@ export function useAlarms(platform, now) {
 
     const setAtTime = (hhmm) => arm(nextOccurrence(hhmm, Date.now()))
     const setCountdown = (minutes) => arm(fromCountdown(minutes, Date.now()))
+    // Absolute instant, for controls that compute their own target (Riviera's
+    // additive chips stack minutes onto the already-armed alarm).
+    const setAt = (at) => arm(Number.isFinite(at) && at > Date.now() ? at : null)
 
     function cancel(id) {
         alarms.value = removeAlarm(alarms.value, id)
@@ -103,6 +106,7 @@ export function useAlarms(platform, now) {
         error,
         setAtTime,
         setCountdown,
+        setAt,
         cancel,
         dismiss,
         snoozeRinging

@@ -9,7 +9,7 @@
  */
 
 import browser from 'webextension-polyfill'
-import { isValidTheme, defaultTheme } from '@/core/themes.js'
+import { isValidTheme, isValidMode, defaultTheme, defaultMode } from '@/core/themes.js'
 import { useExtensionAlarms } from '@/composables/useExtensionAlarms.js'
 
 export function createExtensionPlatform() {
@@ -20,11 +20,12 @@ export function createExtensionPlatform() {
 
         async loadState() {
             const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true
-            const { theme } = await browser.storage.local.get('theme')
+            const { theme, mode } = await browser.storage.local.get(['theme', 'mode'])
 
             return {
                 alarms: [],
-                theme: isValidTheme(theme) ? theme : defaultTheme(prefersDark)
+                theme: isValidTheme(theme) ? theme : defaultTheme(),
+                mode: isValidMode(mode) ? mode : defaultMode(prefersDark)
             }
         },
 
@@ -34,6 +35,10 @@ export function createExtensionPlatform() {
 
         saveTheme(theme) {
             browser.storage.local.set({ theme })
+        },
+
+        saveMode(mode) {
+            browser.storage.local.set({ mode })
         },
 
         // Notification permission comes from the manifest, and the worker owns

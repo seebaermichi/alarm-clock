@@ -16,14 +16,20 @@
  * localStorage, Notification, Audio or chrome.* directly.
  */
 
-import { isValidTheme, defaultTheme } from '@/core/themes.js'
+import { isValidTheme, isValidMode, defaultTheme, defaultMode } from '@/core/themes.js'
 import { useAlarms } from '@/composables/useAlarms.js'
+import { createRinger, hasRecipe } from './sounds.js'
 
 const STORAGE_KEY = 'alarm-clock:state'
 const ALARM_SOUND = '/sounds/alarm-clock.mp3'
 
 export function createWebPlatform() {
     let audio = null
+    // The alarm sound follows the theme (each design ships its own WebAudio
+    // recipe), so the platform tracks the active theme itself — the alarm
+    // store that calls playAlarm() has no business knowing about themes.
+    let currentTheme = defaultTheme()
+    const ringer = createRinger()
     const platform = {}
 
     function read() {
@@ -65,9 +71,12 @@ export function createWebPlatform() {
             const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true
             const stored = read()
 
+            currentTheme = isValidTheme(stored?.theme) ? stored.theme : defaultTheme()
+
             return {
                 alarms: Array.isArray(stored?.alarms) ? stored.alarms : [],
-                theme: isValidTheme(stored?.theme) ? stored.theme : defaultTheme(prefersDark)
+                theme: currentTheme,
+                mode: isValidMode(stored?.mode) ? stored.mode : defaultMode(prefersDark)
             }
         },
 
@@ -80,7 +89,12 @@ export function createWebPlatform() {
         },
 
         saveTheme(theme) {
+            currentTheme = theme
             write({ theme })
+        },
+
+        saveMode(mode) {
+            write({ mode })
         },
 
         async requestPermission() {
@@ -103,6 +117,9 @@ export function createWebPlatform() {
             // Autoplay policy blocks a bare play() later on. Starting and
             // immediately pausing during a real click marks the element as
             // user-activated, so the alarm can sound unattended afterwards.
+            // The WebAudio context needs the same gesture to leave 'suspended',
+            // and the user may switch themes between set and ring — so both
+            // paths are unlocked here regardless of the current theme.
             const sound = element()
 
             sound
@@ -112,9 +129,16 @@ export function createWebPlatform() {
                     sound.currentTime = 0
                 })
                 .catch(() => {})
+
+            ringer.unlock()
         },
 
         playAlarm() {
+            if (hasRecipe(currentTheme)) {
+                ringer.start(currentTheme)
+                return
+            }
+
             const sound = element()
 
             sound.currentTime = 0
@@ -123,6 +147,10 @@ export function createWebPlatform() {
         },
 
         stopAlarm() {
+            // Stop both paths, not just the current theme's: the theme may
+            // have changed while ringing.
+            ringer.stop()
+
             const sound = element()
 
             sound.pause()

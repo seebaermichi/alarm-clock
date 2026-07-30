@@ -49,7 +49,7 @@ defineEmits(['cancel'])
 
 .alarms__time {
     color: var(--digit);
-    font-family: 'digital-7regular', monospace;
+    font-family: var(--font-time);
     font-size: 1.9rem;
     line-height: 1;
 }

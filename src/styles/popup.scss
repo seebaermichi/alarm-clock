@@ -1,50 +1,91 @@
 /**
  * Popup-only overrides. The web layout centres itself in a full viewport;
  * inside a 380x460 popup that leaves the clock cramped against the controls.
+ * The faces expose their sizes as custom properties precisely so this file
+ * can shrink them without touching component internals.
+ *
+ * Prefixed with #app: scoped component styles compile to .class[data-v-hash],
+ * which out-ranks a bare class — the id keeps these overrides winning.
  */
 
 body {
     overflow: hidden;
 }
 
-.app__header {
+#app .app__header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
     padding: 0.75rem 1rem;
 }
 
-.app__main {
+#app .app__main {
     gap: 1rem;
     padding: 0.5rem 1rem 1.5rem;
 }
 
-.clock {
+// Basic face
+#app .clock {
     font-size: 3.6rem;
 }
 
-.controls__input {
-    font-size: 1.75rem;
+// Split-flap face
+#app .board {
+    --sf-card-w: 48px;
+    --sf-card-h: 70px;
+    --sf-card-fs: 44px;
+    --sf-card-sw: 30px;
+    --sf-card-sh: 44px;
+    --sf-card-sfs: 26px;
+
+    gap: 8px;
 }
 
-.controls__submit {
+#app .board__group {
+    gap: 4px;
+}
+
+// Retro LED face
+#app .housing {
+    --seg-big: 32px;
+    --seg-small: 18px;
+
+    padding: 14px 16px;
+}
+
+#app .window {
+    padding: 14px 16px 12px;
+}
+
+// Analog faces
+#app .dial {
+    --dial-size: 220px;
+}
+
+#app .controls__input {
+    font-size: 1.5rem;
+}
+
+#app .controls__submit {
     font-size: 1rem;
     padding: 0.6rem 1.1rem;
 }
 
-.alarms__list {
+#app .alarms__list {
     max-height: 7rem;
     min-width: 0;
     overflow-y: auto;
     width: 100%;
 }
 
-.alarms__time {
+#app .alarms__time {
     font-size: 1.5rem;
 }
 
-.ringing__time {
+#app .ringing__time {
     font-size: 4.5rem;
 }
 
-.ringing__button {
+#app .ringing__button {
     font-size: 1rem;
     padding: 0.7rem 1.25rem;
 }

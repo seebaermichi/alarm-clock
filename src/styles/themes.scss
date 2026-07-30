@@ -1,14 +1,31 @@
 /**
- * Five themes, one contract. Every component styles itself purely from these
- * custom properties — no component may hard-code a colour, or adding a sixth
- * theme would mean touching every file.
+ * Seven themes × two modes, one contract. Every component styles itself purely
+ * from these custom properties — no component may hard-code a colour, or
+ * adding an eighth theme would mean touching every file.
  *
- * --digit-ghost is the dim "8" rendered behind each digit to hold its width so
- * the proportional LCD face doesn't jitter as the numbers change.
+ * Two axes on <html>: data-theme picks the clock face, data-mode its dark or
+ * light variant. Token values are ported verbatim from the design prototypes
+ * in design/*.html — treat those as the source of truth.
+ *
+ * Shared names every theme must define: --bg --surface --border --text --muted
+ * --digit --accent --accent-contrast --danger --danger-contrast --glow, plus
+ * --font-ui / --font-time. Theme-structural extras are namespaced (--sf-*
+ * split-flap, --seg-* / --display / --key retro-led, --face / --hand /
+ * --second / --lume analog, --shape-1..4 riviera).
  */
 
+// ---------------------------------------------------------------- basic
+// The original app, kept as a theme: dark is the old LCD palette, light the
+// old Paper palette. --digit-ghost is the dim "8" rendered behind each digit
+// to hold its width so the proportional LCD face doesn't jitter.
+
+:root {
+    --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-time: 'digital-7regular', monospace;
+}
+
 :root,
-:root[data-theme='lcd'] {
+:root[data-theme='basic'][data-mode='dark'] {
     --bg: #0b0f0c;
     --surface: #131a15;
     --border: #1f2f24;
@@ -23,37 +40,7 @@
     --glow: 0 0 18px rgb(77 255 155 / 35%);
 }
 
-:root[data-theme='amber'] {
-    --bg: #14100a;
-    --surface: #1e1710;
-    --border: #3a2c1a;
-    --text: #ffe2b0;
-    --muted: #9a7f56;
-    --digit: #ffb038;
-    --digit-ghost: #3a25092e;
-    --accent: #f59e0b;
-    --accent-contrast: #1a1004;
-    --danger: #ef4444;
-    --danger-contrast: #1a0505;
-    --glow: 0 0 18px rgb(255 176 56 / 35%);
-}
-
-:root[data-theme='midnight'] {
-    --bg: #0d1220;
-    --surface: #151d31;
-    --border: #24304a;
-    --text: #c3d4f0;
-    --muted: #6d7f9e;
-    --digit: #7dd3fc;
-    --digit-ghost: #1a2a442e;
-    --accent: #38bdf8;
-    --accent-contrast: #05121c;
-    --danger: #f87171;
-    --danger-contrast: #1a0808;
-    --glow: 0 0 14px rgb(125 211 252 / 22%);
-}
-
-:root[data-theme='paper'] {
+:root[data-theme='basic'][data-mode='light'] {
     --bg: #f6f5f1;
     --surface: #ffffff;
     --border: #d9d6cd;
@@ -68,25 +55,332 @@
     --glow: none;
 }
 
-:root[data-theme='synthwave'] {
-    --bg: #1a0b2e;
-    --surface: #241141;
-    --border: #3d1f66;
-    --text: #f0d9ff;
-    --muted: #9a76c4;
-    --digit: #ff5ed2;
-    --digit-ghost: #3a1a5c3d;
-    --accent: #22d3ee;
-    --accent-contrast: #0a1a1f;
-    --danger: #fb7185;
-    --danger-contrast: #1f0710;
-    --glow: 0 0 22px rgb(255 94 210 / 45%);
+// ------------------------------------------------------------ split-flap
+// Departure-board flip cards. The ringing rail is the same near-black board
+// in both modes, so those tokens live on the theme, not the mode.
+
+:root[data-theme='split-flap'] {
+    --font-ui: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-time: var(--font-ui);
+    --sf-rail: #0c0c0e;
+    --sf-rail-digit: #efefec;
+    --sf-rail-border: #3a3b40;
+    --sf-rail-muted: #9a9a96;
+    --sf-rail-hint: #6d6d68;
+}
+
+:root[data-theme='split-flap'][data-mode='dark'] {
+    --bg: #17181b;
+    --surface: #232427;
+    --border: #35363b;
+    --text: #efefec;
+    --muted: #8b8b86;
+    --digit: #efefec;
+    --digit-dim: #a7a7a2;
+    --accent: #e8a33d;
+    --accent-contrast: #1a1104;
+    --danger: #ef4444;
+    --danger-contrast: #1a0505;
+    --glow: none;
+    --sf-card: linear-gradient(#2b2c30, #1f2023);
+    --sf-card-sm: linear-gradient(#26272b, #1d1e21);
+    --sf-card-border: transparent;
+    --sf-seam: rgb(0 0 0 / 55%);
+    --sf-shadow: inset 0 1px 0 rgb(255 255 255 / 7%), 0 8px 20px rgb(0 0 0 / 50%);
+}
+
+:root[data-theme='split-flap'][data-mode='light'] {
+    --bg: #eceae3;
+    --surface: #ffffff;
+    --border: #d9d7cf;
+    --text: #26262a;
+    --muted: #77736a;
+    --digit: #26262a;
+    --digit-dim: #77736a;
+    --accent: #d98f1f;
+    --accent-contrast: #241503;
+    --danger: #dc2626;
+    --danger-contrast: #ffffff;
+    --glow: none;
+    --sf-card: linear-gradient(#ffffff, #f0efeb);
+    --sf-card-sm: linear-gradient(#fbfaf7, #eeede8);
+    --sf-card-border: #d9d7cf;
+    --sf-seam: rgb(0 0 0 / 10%);
+    --sf-shadow: 0 3px 8px rgb(0 0 0 / 8%);
+}
+
+// ------------------------------------------------------------- retro-led
+// Dark mode is a 1970s red-LED clock radio, light a gray LCD travel clock.
+
+:root[data-theme='retro-led'] {
+    --font-ui: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-time: 'Courier New', monospace;
+}
+
+:root[data-theme='retro-led'][data-mode='dark'] {
+    --bg: #141210;
+    --surface: #1c1917;
+    --border: #332d27;
+    --text: #c9c2b8;
+    --muted: #7a7268;
+    --digit: #ff3b25;
+    --accent: #ff3b25;
+    --accent-contrast: #1a0503;
+    --danger: #ff3b25;
+    --danger-contrast: #1a0503;
+    --glow: none;
+    --display: #0a0505;
+    --display-border: #000;
+    --seg-on: #ff3b25;
+    --seg-off: rgb(255 60 30 / 7%);
+    --seg-glow: drop-shadow(0 0 4px rgb(255 60 30 / 80%)) drop-shadow(0 0 14px rgb(255 40 20 / 45%));
+    --key: linear-gradient(#2a2622, #1a1714);
+    --key-border: #3a342c;
+}
+
+:root[data-theme='retro-led'][data-mode='light'] {
+    --bg: #e8e6da;
+    --surface: #f4f2e8;
+    --border: #c9c5b2;
+    --text: #3a382e;
+    --muted: #8a8676;
+    --digit: #2a3226;
+    --accent: #3c4a38;
+    --accent-contrast: #eef0e4;
+    --danger: #b0402a;
+    --danger-contrast: #fdf3ef;
+    --glow: none;
+    --display: #c7cfb8;
+    --display-border: #a9b199;
+    --seg-on: #2a3226;
+    --seg-off: rgb(42 50 38 / 9%);
+    --seg-glow: none;
+    --key: linear-gradient(#fbf9f0, #e8e5d6);
+    --key-border: #c9c5b2;
+}
+
+// -------------------------------------------------------------- terminal
+
+:root[data-theme='terminal'] {
+    --font-ui: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    --font-time: var(--font-ui);
+}
+
+:root[data-theme='terminal'][data-mode='dark'] {
+    --bg: #050805;
+    --surface: #0a140c;
+    --border: #143520;
+    --text: #9fdfb6;
+    --muted: #3f7a55;
+    --digit: #58ff9e;
+    --accent: #58ff9e;
+    --accent-contrast: #03140a;
+    --danger: #ff6b6b;
+    --danger-contrast: #1a0505;
+    --glow: 0 0 14px rgb(80 255 150 / 45%);
+}
+
+:root[data-theme='terminal'][data-mode='light'] {
+    --bg: #f4f3ea;
+    --surface: #e9e8db;
+    --border: #d5d4c2;
+    --text: #4a6a54;
+    --muted: #8a9a8e;
+    --digit: #1f6b3f;
+    --accent: #1f6b3f;
+    --accent-contrast: #f4f3ea;
+    --danger: #c0392b;
+    --danger-contrast: #fdf3f1;
+    --glow: none;
+}
+
+// --------------------------------------------------------------- station
+
+:root[data-theme='station'] {
+    --font-ui: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-time: var(--font-ui);
+    // The ringing flood is the same signal red in both modes, so its ink is
+    // fixed too — the white snooze pill always carries dark text.
+    --st-pill-text: #1a1a18;
+}
+
+:root[data-theme='station'][data-mode='light'] {
+    --bg: #f0efec;
+    --surface: #ffffff;
+    --border: #d8d6d0;
+    --text: #1a1a18;
+    --muted: #77736a;
+    --digit: #1a1a18;
+    --accent: #d92b2b;
+    --accent-contrast: #ffffff;
+    --danger: #d92b2b;
+    --danger-contrast: #ffffff;
+    --glow: none;
+    --face: #ffffff;
+    --face-border: #dcdad4;
+    --hand: #1a1a18;
+    --second: #d92b2b;
+    --tab-active: #1a1a18;
+    --tab-active-text: #ffffff;
+}
+
+:root[data-theme='station'][data-mode='dark'] {
+    --bg: #141517;
+    --surface: #1e1f22;
+    --border: #2c2d31;
+    --text: #e8e8e4;
+    --muted: #8b8b86;
+    --digit: #e8e8e4;
+    --accent: #d92b2b;
+    --accent-contrast: #ffffff;
+    --danger: #ff4d4d;
+    --danger-contrast: #1a0505;
+    --glow: none;
+    --face: #1e1f22;
+    --face-border: #2c2d31;
+    --hand: #e8e8e4;
+    --second: #ff4d4d;
+    --tab-active: #e8e8e4;
+    --tab-active-text: #141517;
+}
+
+// -------------------------------------------------------------- nocturne
+
+:root[data-theme='nocturne'] {
+    --font-ui: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-time: var(--font-ui);
+}
+
+:root[data-theme='nocturne'][data-mode='dark'] {
+    --bg: #080a08;
+    --surface: #0e130f;
+    --border: #24322a;
+    --text: #baffd2;
+    --muted: #5d7d6a;
+    --digit: #baffd2;
+    --accent: #baffd2;
+    --accent-contrast: #06140b;
+    --danger: #ff8c5a;
+    --danger-contrast: #1a0a04;
+    --glow: 0 0 12px rgb(186 255 210 / 35%);
+    --face: #0e120e;
+    --face-border: #1d251d;
+    --lume: #baffd2;
+    --lume-halo: rgb(186 255 210 / 14%);
+    --hand: #cfffdd;
+    --second: #ff8c5a;
+}
+
+// The light "Daybreak" variant.
+:root[data-theme='nocturne'][data-mode='light'] {
+    --bg: #eef1ec;
+    --surface: #ffffff;
+    --border: #ccd8cc;
+    --text: #3c5a47;
+    --muted: #7e937f;
+    --digit: #3c5a47;
+    --accent: #3c5a47;
+    --accent-contrast: #ffffff;
+    --danger: #d97a4a;
+    --danger-contrast: #ffffff;
+    --glow: none;
+    --face: #f9fbf7;
+    --face-border: #dde4da;
+    --lume: #5f8a6e;
+    --lume-halo: transparent;
+    --hand: #3c5a47;
+    --second: #d97a4a;
+}
+
+// --------------------------------------------------------------- riviera
+
+:root[data-theme='riviera'] {
+    --font-ui: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-time: var(--font-ui);
+    // Ink on the mustard snooze button, identical in both modes.
+    --rv-snooze-text: #3a2f10;
+}
+
+:root[data-theme='riviera'][data-mode='light'] {
+    --bg: #f3ead9;
+    --surface: #ffffff;
+    --border: #e6d8bd;
+    --text: #3a3632;
+    --muted: #8a7f6a;
+    --digit: #3a3632;
+    --accent: #2f7f74;
+    --accent-contrast: #ffffff;
+    --danger: #b6543f;
+    --danger-contrast: #ffffff;
+    --glow: none;
+    --face: #fdf7ea;
+    --face-border: #e6d8bd;
+    --dots: #3a3632;
+    --shape-1: #d96f32;
+    --shape-2: #2f7f74;
+    --shape-3: #e3b230;
+    --shape-4: #b6543f;
+    --chip: #e3b230;
+    --chip-text: #8a6a1c;
+}
+
+// The dark "Ink" variant: the same shapes, brightened, on midnight blue.
+:root[data-theme='riviera'][data-mode='dark'] {
+    --bg: #171c26;
+    --surface: #202836;
+    --border: #2c3648;
+    --text: #dfe4ec;
+    --muted: #8b95a8;
+    --digit: #dfe4ec;
+    --accent: #4aa396;
+    --accent-contrast: #0c1512;
+    --danger: #cf6a52;
+    --danger-contrast: #171c26;
+    --glow: none;
+    --face: #202836;
+    --face-border: #2c3648;
+    --dots: #8b95a8;
+    --shape-1: #e0803f;
+    --shape-2: #4aa396;
+    --shape-3: #e9c04a;
+    --shape-4: #cf6a52;
+    --chip: #e9c04a;
+    --chip-text: #e9c04a;
+}
+
+// ----------------------------------------------- per-theme layout overrides
+// The terminal is a left-aligned column, and its status line sits below the
+// prompt. Flex order beats forking App.vue's layout per theme.
+
+:root[data-theme='terminal'] .app__main {
+    align-items: flex-start;
+    margin: 0 auto;
+    max-width: 52rem;
+    width: 100%;
+}
+
+:root[data-theme='terminal'] .app__next {
+    margin-top: 0;
+    order: 2;
+    text-transform: lowercase;
+}
+
+:root[data-theme='terminal'] .app__title {
+    text-transform: lowercase;
+}
+
+:root[data-theme='terminal'] .alarms {
+    order: 3;
 }
 
 // Glow is decorative; honour a stated preference for less motion and contrast.
 @media (prefers-reduced-motion: reduce) {
-    :root {
+    // Matches the specificity of the theme blocks; later in the file, so it
+    // wins for every theme, not just the default.
+    :root,
+    :root[data-theme][data-mode] {
         --glow: none;
+        --seg-glow: none;
     }
 
     *,
