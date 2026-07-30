@@ -39,10 +39,11 @@ export default [
         }
     },
     {
-        // Extension code additionally sees chrome.* / browser.*.
+        // Extension code additionally sees chrome.* / browser.*, plus the
+        // build-time target flag vite.config.extension.js defines.
         files: ['apps/extension/**/*.js'],
         languageOptions: {
-            globals: { ...globals.browser, ...globals.webextensions }
+            globals: { ...globals.browser, ...globals.webextensions, __CHROME__: 'readonly' }
         }
     },
     {

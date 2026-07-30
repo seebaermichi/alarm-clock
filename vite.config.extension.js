@@ -32,6 +32,13 @@ const nested = {
         }
     },
     plugins: [vue()],
+    // Compile-time target flag: replaced with a literal, so the bundler drops
+    // the other browser's branches entirely. The AMO validator used to warn
+    // about chrome.offscreen.* calls it found in the Firefox background.js
+    // even though Firefox never executed them; now they aren't in the file.
+    define: {
+        __CHROME__: JSON.stringify(target === 'chrome')
+    },
     build: {
         outDir,
         // Two nested builds write here in sequence; emptying would delete
@@ -50,7 +57,9 @@ export default defineConfig({
             browser: target,
             // The offscreen document is created at runtime by the worker, so
             // nothing in the manifest points at it and it needs declaring.
-            additionalInputs: ['offscreen.html'],
+            // Chrome only — Firefox plays from its background page and would
+            // just ship a dead file.
+            additionalInputs: target === 'chrome' ? ['offscreen.html'] : [],
             // web-ext auto-launch is unused; it only exists to drive a browser
             // runner we have no need for.
             disableAutoLaunch: true,

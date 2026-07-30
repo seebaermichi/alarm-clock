@@ -21,7 +21,10 @@ import { formatClock } from '@/core/time.js'
 const BADGE_TICK = 'badge-tick'
 const ALARM_SOUND = 'sounds/alarm-clock.mp3'
 
-const isChrome = typeof chrome !== 'undefined' && Boolean(chrome.offscreen)
+// __CHROME__ is replaced with a literal at build time (vite.config.extension.js),
+// so each target's bundle contains only its own audio path. The AMO validator
+// flags chrome.offscreen.* calls merely for existing in the file — a runtime
+// guard is not enough to satisfy it.
 
 async function getState() {
     const { alarms = [], ringing = null, theme = null } = await browser.storage.local.get([
@@ -139,7 +142,7 @@ async function ensureOffscreen() {
 let firefoxAudio = null
 
 async function playAlarm() {
-    if (isChrome) {
+    if (__CHROME__) {
         // Creating the document is the whole trigger: it starts playing on load
         // and has no state to consult. Note it may only use chrome.runtime, so
         // it could not consult storage even if we wanted it to.
@@ -155,7 +158,7 @@ async function playAlarm() {
 }
 
 async function stopAlarm() {
-    if (isChrome) {
+    if (__CHROME__) {
         // Closing the document tears the <audio> element down with it.
         await chrome.offscreen.closeDocument().catch(() => {})
         return
@@ -179,7 +182,7 @@ async function notify(alarm) {
 
     // Firefox's notifications API supports neither action buttons nor
     // requireInteraction; sending them throws rather than degrading.
-    if (isChrome) {
+    if (__CHROME__) {
         options.buttons = [{ title: `Snooze ${DEFAULT_SNOOZE_MINUTES}m` }, { title: 'Stop' }]
         options.requireInteraction = true
     }
@@ -279,7 +282,7 @@ async function boot() {
     await updateBadge()
 
     console.info(
-        `[alarm-clock] booted — audio path: ${isChrome ? 'offscreen (chrome)' : 'background page (firefox)'}`
+        `[alarm-clock] booted — audio path: ${__CHROME__ ? 'offscreen (chrome)' : 'background page (firefox)'}`
     )
 }
 
