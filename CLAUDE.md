@@ -62,7 +62,9 @@ Chrome/Firefox divergence lives in `apps/extension/manifest.js`: `service_worker
 
 ## Status
 
-Chrome extension verified working end to end (rings with popup closed, sound, notification buttons, countdown badge). **Firefox is built but never run** — the background-page audio path and `background.type: "module"` are unverified.
+Both extension targets verified working end to end: rings with the popup closed, sound plays, countdown badge updates (plus notification action buttons on Chrome, which Firefox does not support).
+
+Firefox worked throughout, including while Chrome was silent — it plays from its background page and never creates an offscreen document, so the `chrome.storage` fault could not reach it. Useful signal if the audio paths ever diverge again: a failure in one target says nothing about the other.
 
 ## Conventions
 

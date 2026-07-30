@@ -103,7 +103,7 @@ apps/
 - [x] **30.** Toolbar badge counting down to the next alarm.
 - [x] **31.** Firefox variant: `browser_specific_settings.gecko.id`, `webextension-polyfill`, separate build target.
 - [x] **32.** Self-host or drop the Google-hosted `Bitter` webfont — MV3's default CSP blocks remote fonts. (`digital-7` is already local.)
-- [x] **33.** Chrome: verified end to end — rings with the popup closed, sound plays, notification buttons and countdown badge work. **Firefox: built but never run** (background-page audio and `background.type: "module"` unverified).
+- [x] **33.** Verified end to end in **both** Chrome and Firefox — rings with the popup closed, sound plays, countdown badge updates (notification action buttons on Chrome only; Firefox does not support them). Firefox worked even while Chrome was silent, since it plays from its background page and never touches the offscreen document.
 
 ## Phase 5 — Ship
 
