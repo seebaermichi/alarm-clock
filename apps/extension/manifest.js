@@ -38,7 +38,13 @@ export default function manifest(target = 'chrome') {
         base.browser_specific_settings = {
             gecko: {
                 id: 'alarm-clock@michael-becker-berlin.de',
-                strict_min_version: '115.0'
+                strict_min_version: '115.0',
+                // AMO rejects new submissions without a data-collection
+                // declaration. Alarms and theme live in local storage and
+                // never leave the machine, so: none.
+                data_collection_permissions: {
+                    required: ['none']
+                }
             }
         }
     } else {

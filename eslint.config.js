@@ -5,7 +5,9 @@ import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
 
 export default [
     {
-        ignores: ['dist/**', 'dist-extension/**', 'node_modules/**']
+        // design/ holds generated handoff artefacts from the design pass,
+        // not code we maintain.
+        ignores: ['dist/**', 'dist-extension/**', 'node_modules/**', 'design/**']
     },
     js.configs.recommended,
     ...pluginVue.configs['flat/recommended'],
