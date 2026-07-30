@@ -15,6 +15,15 @@ export default defineConfig({
     },
     build: {
         outDir: fileURLToPath(new URL('./dist', import.meta.url)),
-        emptyOutDir: true
+        emptyOutDir: true,
+        rollupOptions: {
+            // The privacy policy is a second entry rather than a file in
+            // public/, because public/ is shared with the extension build and
+            // the extension has no business shipping a web page.
+            input: {
+                main: fileURLToPath(new URL('./apps/web/index.html', import.meta.url)),
+                privacy: fileURLToPath(new URL('./apps/web/privacy/index.html', import.meta.url))
+            }
+        }
     }
 })
