@@ -4,6 +4,13 @@
  * rather than hidden behind build-time string substitution.
  */
 
+const ICONS = {
+    16: 'icons/icon-16.png',
+    32: 'icons/icon-32.png',
+    48: 'icons/icon-48.png',
+    128: 'icons/icon-128.png'
+}
+
 export default function manifest(target = 'chrome') {
     const isFirefox = target === 'firefox'
 
@@ -15,12 +22,13 @@ export default function manifest(target = 'chrome') {
         permissions: ['alarms', 'storage', 'notifications'],
         action: {
             default_popup: 'popup.html',
-            default_title: 'Alarm Clock'
+            default_title: 'Alarm Clock',
+            default_icon: ICONS
         },
-        icons: {
-            192: 'android-chrome-192x192.png',
-            512: 'android-chrome-512x512.png'
-        }
+        // Declared at the sizes the browser actually asks for. Shipping only
+        // the 192/512 favicons left Chrome downscaling a large PNG for a 16px
+        // toolbar slot.
+        icons: ICONS
     }
 
     if (isFirefox) {

@@ -103,15 +103,15 @@ apps/
 - [x] **30.** Toolbar badge counting down to the next alarm.
 - [x] **31.** Firefox variant: `browser_specific_settings.gecko.id`, `webextension-polyfill`, separate build target.
 - [x] **32.** Self-host or drop the Google-hosted `Bitter` webfont — MV3's default CSP blocks remote fonts. (`digital-7` is already local.)
-- [ ] **33.** Test load-unpacked in Chrome and via `about:debugging` in Firefox. **Yours to run** — automation cannot reach `chrome://extensions`.
+- [x] **33.** Chrome: verified end to end — rings with the popup closed, sound plays, notification buttons and countdown badge work. **Firefox: built but never run** (background-page audio and `background.type: "module"` unverified).
 
 ## Phase 5 — Ship
 
 - [x] **34.** `netlify.toml` — build command + `dist` publish dir.
 - [x] **35.** Fill in `site.webmanifest` (`name`/`short_name` are currently empty strings). Fix the page title — `<%= htmlWebpackPlugin.options.title %>` and `<%= BASE_URL %>` are webpack-only and break under Vite.
-- [ ] **36.** Generate extension icons from the existing PNGs.
-- [ ] **37.** Rewrite `README.md` (currently stock Vue CLI boilerplate).
-- [ ] **38.** Update `CLAUDE.md` for the new architecture.
+- [x] **36.** Generate extension icons from the existing PNGs.
+- [x] **37.** Rewrite `README.md` (currently stock Vue CLI boilerplate).
+- [x] **38.** Update `CLAUDE.md` for the new architecture.
 
 ---
 

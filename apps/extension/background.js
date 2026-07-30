@@ -172,7 +172,7 @@ async function stopAlarm() {
 async function notify(alarm) {
     const options = {
         type: 'basic',
-        iconUrl: browser.runtime.getURL('android-chrome-192x192.png'),
+        iconUrl: browser.runtime.getURL('icons/icon-128.png'),
         title: `Alarm — ${formatClock(alarm.at)}`,
         message: alarm.label || 'Time is up.'
     }

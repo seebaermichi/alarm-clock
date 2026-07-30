@@ -4,54 +4,70 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A browser alarm clock, used daily to avoid missing meetings while working in other tabs. Forked from a Vue.js training exercise, now being rebuilt in place.
+A browser alarm clock — rings at a wall-clock time or after a countdown — used daily to avoid missing meetings while working in other tabs. Ships as a web app (Netlify) and as a Chrome/Edge/Firefox extension.
 
-**An active rebuild is underway — read `ToDo.md` first.** It is the source of truth for the target architecture and the task order. This file describes the *current* state, which the rebuild is replacing.
+Work happens **directly on `main`**; no feature branches. Remaining work is tracked in `ToDo.md`.
 
-Work happens **directly on `main`**; no feature branches.
-
-## Current state (pre-rebuild)
-
-Vue 3.5 + vue-router 4.5 on Vue CLI 5 (webpack). SCSS via `sass-loader`. No state library, no TypeScript, no `vue.config.js`.
+## Commands
 
 ```bash
-npm install
-npm run serve     # dev server
-npm run build     # production build to dist/
-npm run lint      # BROKEN — see below
+npm run dev                       # web app dev server
+npm run build                     # web -> dist/
+npm run test                      # Vitest over src/**/*.test.js
+npm run lint                      # ESLint 10 flat config
+npm run build:extension           # -> dist-extension/chrome
+npm run build:extension:firefox   # -> dist-extension/firefox
 ```
 
-**No test infrastructure exists** — no runner, no spec files, no `test` script. Don't reference or invent test commands. (Vitest arrives in task 8.)
+Node 20.19+ or 22.12+ (Vite 8 requirement). Netlify pins Node 22 via `netlify.toml`.
 
-Two known config defects, both fixed by ToDo task 4 — don't be surprised by them:
-- `npm run lint` fails: `@vue/cli-plugin-eslint` is no longer in `devDependencies`, but the `lint` script still calls `vue-cli-service lint`.
-- Two conflicting ESLint configs coexist: `.eslintrc.js` (the real one) and a stale `eslintConfig` block in `package.json` that names the uninstalled `babel-eslint` parser.
+**The web Vite config is `vite.config.web.js`, not `vite.config.js`.** Renaming it back will break the extension build — Vite auto-discovers the default name during the extension plugin's nested builds and applies the web app's root, breaking every entry path. `npm run dev`/`build` pass `--config` explicitly.
 
-## Architecture
+Chrome does not auto-reload unpacked extensions: after `build:extension`, the card in `chrome://extensions` must be reloaded manually. Automation cannot reach `chrome://extensions`, so extension runtime behaviour can only be verified by the user.
 
-- `src/main.js` — creates the app, installs the router, imports the one global stylesheet.
-- `src/router/index.js` — routes with eager static imports; `/:catchAll(.*)` must stay last. **Being deleted** — the rebuild is a single page.
-- `src/components/DigitalClock.vue` — the whole app: clock display, alarm input, snooze/stop.
-- `src/components/ClockDigit.vue` — renders a dim `8` behind each digit so the proportional LCD font doesn't jitter as numbers change. **Keep this trick.** Its `computed` block is dead code referencing a nonexistent `this.digits`.
+## Two invariants
 
-### Two live bugs — the reason for the rebuild
+Both encode bugs that already happened. Don't undo them.
 
-Both stem from one root cause: **time is compared as formatted text rather than as an instant.**
+**1. An alarm is an instant, never a formatted string.** Alarms are absolute epoch timestamps in `src/core/alarm.js`, fired on `at <= now` (`dueAlarms`). The original code compared `` `${hours}:${minutes}` `` strings on a 1-second interval; background tabs throttle to ~1/min, the matching minute got skipped, and the alarm was lost silently and permanently. Timestamps make a missed tick *late*, never silent. `src/core/alarm.test.js` pins this.
 
-1. `checkAlarm()` matches the string `` `${hours}:${minutes}` `` on a 1-second `setInterval`. Background tabs throttle timers to ~1/min, so the matching minute gets skipped and the alarm never rings — silently, forever.
-2. `snoozeAlarm()` passes a **Number** into `setLeadingZero()`, which tests `digit.length < 2`; `undefined < 2` is `false`, so it stores `"9:5"` instead of `"09:05"`, which can never match. Snoozing silently cancels the alarm.
+**2. UI components never touch `chrome.*`, `localStorage`, `Notification` or `Audio` directly.** Everything goes through `src/platform/`. `App.vue` receives its platform via `inject('platform')` and gets its alarm store from `platform.createAlarms(now)`, because ownership genuinely differs between web and extension. Breaking this seam forks the codebase in two.
 
-The fix is absolute epoch timestamps and `Date.now() >= target`, so throttling makes an alarm late rather than silent. Don't patch these in place — they're handled by the `core/alarm.js` rewrite in ToDo phase 1.
+## Layout
 
-### Styling
+```
+src/core/         pure, no DOM, no browser APIs — the only unit-tested layer
+src/ui/           Vue 3 SFCs, <script setup>, shared by web page and popup
+src/composables/  useClock, useAlarms (web), useExtensionAlarms (popup), useTheme
+src/platform/     web.js | extension.js — same interface, different guts
+src/styles/       themes.scss, base.scss, popup.scss
+src/workers/      ticker.js
+apps/web/         index.html, main.js
+apps/extension/   manifest.js, background.js, popup.*, offscreen.*
+```
 
-Mixed and inconsistent: `DigitalClock.vue`'s `<style>` is **global**, `ClockDigit.vue`'s is **scoped**. Global class names are self-namespaced by component (`.digiclock-*`, `.timer-*`, `.clock-digit_*`) to avoid collisions.
+`src/core/` must stay free of browser APIs — it's what makes the logic testable in Node.
 
-`src/assets/main.scss` holds the reset, base typography, and the `@font-face` declarations for the local `digital-7` LCD fonts. `Bitter` is pulled from Google Fonts in `public/index.html` — this must become self-hosted or be dropped, since MV3's CSP blocks remote fonts in the extension.
+## Extension specifics
+
+The **background worker owns all alarm state** (`browser.alarms` + `browser.storage.local`). The popup is a view: it sends commands and mirrors storage. Anything the popup owned would die when the user closes it, which is the whole reason the extension exists.
+
+`src/platform/extension.js` is mostly deliberate no-ops (`playAlarm`, `notify`, `unlockAudio`) — that is correct, not unfinished.
+
+**An offscreen document may only use `chrome.runtime`.** `chrome.storage` and every other extension API is `undefined` there. `apps/extension/offscreen.js` therefore holds no logic: the worker creates it only while an alarm rings and closes it to stop, so its existence is the instruction. A previous version read storage on load, threw on line 1, and produced a silent alarm with nothing logged. Do not add state lookups to it.
+
+Chrome/Firefox divergence lives in `apps/extension/manifest.js`: `service_worker` vs `background.scripts`, the `offscreen` permission, `gecko.id`. Firefox notifications support neither action buttons nor `requireInteraction` and throw if sent, so those are attached only when `chrome.offscreen` exists.
+
+`vite.config.extension.js` passes plugins, aliases, root and outDir to the plugin's nested builds explicitly — they inherit nothing.
+
+## Status
+
+Chrome extension verified working end to end (rings with popup closed, sound, notification buttons, countdown badge). **Firefox is built but never run** — the background-page audio path and `background.type: "module"` are unverified.
 
 ## Conventions
 
-- **Options API** in existing code (`data()`, `methods`, lifecycle hooks). New code in the rebuild uses **Composition API with `<script setup>`** — see `ToDo.md`.
-- Timers start in `beforeMount`, clear in `beforeUnmount`.
-- Formatting per `.prettierrc`: **4-space indent, single quotes, no semicolons.**
-- Commit messages: short, lowercase, imperative ("add favicons", "fix typos, functionality").
+- Composition API with `<script setup>`. No Options API in current code.
+- Formatting per `.prettierrc`: 4-space indent, single quotes, no semicolons. Run `npm run lint`.
+- No component hard-codes a colour; everything reads CSS custom properties from `styles/themes.scss` so a sixth theme touches one file. The only exception is the theme-picker swatches, which must show their own theme's colours.
+- Keep the ghost-`8` trick in `ClockDigit.vue` (a dim `8` behind each digit holds the glyph width so the proportional LCD font doesn't jitter). Inherited from the original exercise.
+- Commit messages: short lowercase imperative subject; explain *why* in the body.
