@@ -77,3 +77,7 @@ Netlify builds from `main` using `netlify.toml` (`npm run build` → `dist`, Nod
 ## Credits
 
 Forked from a Vue.js training exercise by [EllyPirelly](https://github.com/EllyPirelly). The fixed-width digit trick — a dim `8` rendered behind each digit so the proportional LCD face doesn't jitter — is from the original.
+
+## License
+
+[MIT](LICENSE) © Michael Becker
