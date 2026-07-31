@@ -4,6 +4,14 @@
  * rather than hidden behind build-time string substitution.
  */
 
+import { createRequire } from 'node:module'
+
+// The store rejects a submission whose version does not increase, so the
+// manifest version must not be a second copy that can drift behind
+// package.json. createRequire rather than a JSON import: this file is loaded
+// by the Vite config, where import attributes are not reliably supported.
+const { version } = createRequire(import.meta.url)('../../package.json')
+
 const ICONS = {
     16: 'icons/icon-16.png',
     32: 'icons/icon-32.png',
@@ -17,7 +25,7 @@ export default function manifest(target = 'chrome') {
     const base = {
         manifest_version: 3,
         name: 'Alarm Clock',
-        version: '1.0.0',
+        version,
         description: 'A digital clock that rings at a set time or after a countdown.',
         permissions: ['alarms', 'storage', 'notifications'],
         action: {
