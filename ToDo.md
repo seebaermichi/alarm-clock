@@ -120,7 +120,7 @@ apps/
 - [x] **41.** Per-theme controls (`ui/controls/`): steppers, HR/MIN keys, command prompt (`core/command.js`, tested), pill tabs, no-typing WAKE AT + ARM, additive chips.
 - [x] **42.** Per-theme ringing overlays (`ui/ringing/`) + keyboard (Space snooze, Q/Esc stop, Nocturne any-key) + per-theme WebAudio ring recipes (web; extension keeps worker mp3). Terminal snoozes 5 min.
 - [x] **43.** Web verified in-browser: all seven themes render, mode toggle + persistence, terminal grammar, riviera chip stacking, ring/stop.
-- [ ] **44.** Reload the unpacked extension in Chrome/Firefox and eyeball the new themes in the 380×460 popup (`popup.scss` shrinks faces via CSS vars — check split-flap and retro-led fit).
+- [x] **44.** Reload the unpacked extension in Chrome/Firefox and eyeball the new themes in the 380×460 popup (`popup.scss` shrinks faces via CSS vars — check split-flap and retro-led fit).
 
 ---
 

@@ -68,7 +68,7 @@ Chrome/Firefox divergence lives in `apps/extension/manifest.js`: `service_worker
 
 Both extension targets verified working end to end: rings with the popup closed, sound plays, countdown badge updates (plus notification action buttons on Chrome, which Firefox does not support).
 
-The six designer themes (design/README.md) are implemented in web and popup builds; web verified in-browser (faces, controls, ring overlays, persistence). Extension popup rendering of the new themes still needs a manual check after reloading the unpacked extension.
+The six designer themes (design/README.md) are implemented in web and popup builds, and both are verified: web in-browser (faces, controls, ring overlays, persistence) and the extension popup at 380×460 after reloading the unpacked build.
 
 Firefox worked throughout, including while Chrome was silent — it plays from its background page and never creates an offscreen document, so the `chrome.storage` fault could not reach it. Useful signal if the audio paths ever diverge again: a failure in one target says nothing about the other.
 
