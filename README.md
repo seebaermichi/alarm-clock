@@ -4,7 +4,7 @@ A digital clock that rings at a set time or after a countdown — built to not m
 
 Runs as a web app and as a browser extension. The extension is the reliable one: `browser.alarms` fires with the popup closed and the browser idle, which no web page can fully promise.
 
-Five themes: LCD, Amber, Midnight, Paper, Synthwave.
+Seven clock faces, each with a dark and a light mode: Basic (LCD), Split-Flap, Retro LED, Terminal, Station, Nocturne and Riviera. They are structurally different faces, not colour swaps — see `design/README.md`.
 
 ## Development
 
@@ -38,9 +38,12 @@ After any rebuild, click ↻ on the extension's card; Chrome does not auto-reloa
 src/
   core/         pure functions, no DOM or browser APIs — unit tested
   ui/           Vue SFCs, shared by the web page and the extension popup
-  composables/  useClock, useAlarms (web), useExtensionAlarms (popup)
+    faces/      per-theme clock faces (ClockDisplay.vue dispatches on theme)
+    controls/   per-theme alarm controls (AlarmControls.vue dispatches)
+    ringing/    per-theme ringing overlays (RingingOverlay.vue dispatches)
+  composables/  useClock, useAlarms (web), useExtensionAlarms (popup), useTheme
   platform/     web.js | extension.js — one interface, two implementations
-  styles/       themes.scss (5 themes as CSS custom properties), base.scss
+  styles/       themes.scss (7 themes × 2 modes as CSS custom properties), base.scss, popup.scss
   workers/      ticker.js — off-main-thread clock tick
 apps/
   web/          index.html, main.js
